@@ -1,0 +1,653 @@
+#!/usr/bin/env python
+
+# Python Standard Modules
+
+# NRC Modules
+from core.config import *
+from core.job import *
+
+def validate_map_and_barcodes(barcodes, outfile_done):
+    
+    job = Job(
+        [barcodes], 
+        [outfile_done],
+        [['tools', 'module_tools']]
+    )
+    
+    job.command = """
+validateMapAndBarcodes.pl \\
+  --infile_barcodes {barcodes} \\
+  --infile_mapping_file {map} && \\
+  touch {outfile_done}""".format(
+        barcodes = barcodes,
+        map = config.param('default', 'mapping_file', 1, 'filepath'),
+        outfile_done = outfile_done
+    )
+
+    return job
+
+def bbduk(infile, contam, ncontam, log, db, infile_done=False):
+
+    if(infile_done == False):
+        infiles = [infile]
+    else:
+        infiles = [infile, infile_done]
+
+    job = Job(
+        infiles, 
+        [contam, ncontam, log],
+        [
+            ['bbmap', 'module_bbmap']
+        ]
+    )
+        
+    job.command="""
+bbduk.sh \\
+  in={infile} \\
+  stats={log} \\
+  out={ncontam} \\
+  outm={contam} \\
+  k={k} \\
+  minkmerhits={c} \\
+  ref={db} \\
+  overwrite=true \\
+  threads=1""".format(
+    infile = infile,
+    log = log,
+    ncontam = ncontam,
+    contam = contam,
+    k = config.param('bbduk', 'k', 'int'),
+    c = config.param('bbduk', 'c', 'int'),
+    db = db
+    ) 
+    return job
+
+def split_barcodes(infile, barcodes, outfile, log):
+    
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+barcodes.pl \\
+--infile {infile} \\
+--barcodes {barcodes} \\
+--outfile {outfile} \\
+--num_threads {num_threads}  \\
+--log {log}""".format(
+    infile = infile,
+    outfile = outfile,
+    barcodes = barcodes,
+    num_threads = config.param( 'barcodes', 'num_threads', 1, 'int'),
+    log = log
+    )
+    
+    return job
+
+def split_barcodes_dir(infile, barcodes, outfile, log, outdir):
+    
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+# ~/build/nrc_tools/RRNATagger/barcodes.pl 
+# --infile ./rrnatagger/assembled/fastqs/ncontam_nphix_trimmed.extendedFrags_QCpassed.fastq 
+# --barcodes ./barcodes.fasta --outdir ./rrnatagger/assembled/obs/demultiplexed/ 
+# --log rrnatagger/assembled/obs/demultiplexed.log
+
+    job.command="""
+rm -rf {outdir}/* && \\
+barcodes.pl \\
+--infile {infile} \\
+--barcodes {barcodes} \\
+--outdir {outdir} \\
+--num_threads {num_threads} \\
+--log {log} && \\
+touch {outfile}""".format(
+    infile = infile,
+    outfile = outfile,
+    barcodes = barcodes,
+    outdir = outdir,
+    num_threads = config.param( 'barcodes', 'num_threads', 1, 'int'),
+    #trim_length = config.param( 'barcodes', 'trim_length', 1, 'int'),
+    log = log
+    )
+    
+    return job
+
+def split_barcodes_dir_sorted(infile, barcodes, outdir, log):
+#$barcodes_splitter_tool." --infile_fastq ".$illumina_infile." --infile_barcodes ".$barcodes_infile." --outdir ".$tmpdir_fastq 
+    job = Job(
+        [infile],
+        [log],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+barcodesSorted.pl \\
+ --infile_fastq {infile} \\
+ --infile_barcodes {barcodes} \\
+ --outdir {outdir} \\
+ --log {log}""".format(
+    infile = infile,
+    log = log,
+    barcodes = barcodes,
+    outdir = outdir
+    )
+    
+    return job
+
+def remove_unpaired_reads(infile, outfile_paired, unpairedR1, unpairedR2):
+    job = Job(
+        [infile], 
+        [outfile_paired],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+    job.command="""
+removeUnpaired.pl \\
+--infile {infile} \\
+--outfile_paired {outfile_paired} \\
+--outfile_1 {unpairedR1} \\
+--outfile_2 {unpairedR2} \\
+--num_threads {num_threads}""".format(
+    infile = infile,
+    outfile_paired = outfile_paired,
+    unpairedR1 = unpairedR1,
+    unpairedR2 = unpairedR2,
+    num_threads =  config.param('remove_unpaired', 'num_threads', 'int')
+    )
+                
+    return job
+
+def split_pairs(infile, outfileR1, outfileR2):
+        
+    job = Job(
+        [infile], 
+        [outfileR1, outfileR2],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+splitPairs.pl \\
+--infile {infile} \\
+--outfile_1 {outfileR1} \\
+--outfile_2 {outfileR2} \\
+--num_threads {num_threads}""".format(
+    infile = infile,
+    outfileR1 = outfileR1,
+    outfileR2 = outfileR2,
+    num_threads = config.param( 'split_pairs', 'num_threads', 'int')
+    )
+                
+    return job
+
+def generate_qscore_sheet(infile, prefix, log, outfile, barcodes):
+    suffix = "suffix"
+
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['fastx', 'module_fastx'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+qscoreSheets.pl \\
+ --fastq {infile} \\
+ --tmp {tmp} \\
+ --prefix {prefix} \\
+ --suffix {suffix} \\
+ --log {log} \\
+ --outfile {outfile} \\
+ --phred {phred} \\
+ --barcodes {barcodes} \\
+ --num_threads {num_threads}""".format(
+        infile = infile,
+        suffix = suffix,
+        prefix = prefix,
+        barcodes = barcodes,
+        log = log,
+        outfile = outfile,
+        tmp = config.param('default', 'tmp_dir', 1, 'dirpath'),
+        phred = config.param('default', 'qual', 1, 'int'),
+        num_threads = config.param('qscore_sheet', 'num_threads', 1, 'int')
+    )
+                    
+    return job
+
+def generate_qscore_graph_single(infile, prefix, outfile):
+        
+    job = Job(
+        [infile] , 
+        [outfile],
+        [
+            ['R', 'module_R'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+    job.command="""
+qscorePlots.pl \\
+ --infile_1 {infile} \\
+ --name {prefix} \\
+ --pdf {outfile} \\
+ --display 1 \\
+ --single""".format(
+    infile = infile,
+    prefix = prefix,
+    outfile = outfile
+    )
+
+    return job
+
+def generate_qscore_graph_paired(infileR1, infileR2, outfile):
+                
+    job = Job(
+        [infileR1, infileR2], 
+        [outfile],
+        [
+            ['R', 'module_R'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+qscorePlots.pl \\
+  --infile_1 {infileR1} \\
+  --infile_2 {infileR2} \\
+  --name qual_stats \\
+  --pdf {outfile} \\
+  --display 1 \\
+  --paired""".format(
+    infileR1 = infileR1,
+    infileR2 = infileR2,
+    outfile = outfile
+    )
+
+    return job
+
+def cut_reads(infile, begin, end, outfile):
+        
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+cutFastqSeq.pl \\
+--infile {infile} \\
+--begin {begin} \\
+--end {end} \\
+--outfile {outfile}""".format(
+    infile = infile,
+    begin = begin,
+    end = end,
+    outfile = outfile
+    )
+
+    return job
+
+def flash(infileR1, infileR2, prefix, outdir):
+                
+    job = Job(
+        [infileR1, infileR2], 
+        [outdir + "/assembly_complete/ncontam_nphix_trimmed.extendedFrags.fastq"],
+        [
+            ['flash', 'module_flash'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+    job.command="""
+flash.pl \\
+--infile_1 {infileR1} \\
+--infile_2 {infileR2} \\
+--prefix {prefix} \\
+--outdir {outdir} \\
+--n {n} \\
+--mismatches {m} \\
+--M {M} \\
+--x {x} \\
+--p {p} \\
+--num_threads {num_threads}""".format(
+    infileR1 = infileR1,
+    infileR2 = infileR2,
+    prefix = prefix,
+    outdir = outdir,
+    n = config.param('flash', 'sampling', 'int'),
+    m = config.param('flash', 'minOverlap', 'int'),
+    M = config.param('flash', 'maxOverlap', 'int'),
+    x = config.param('flash', 'percentMismatch', 'float'),
+    p = config.param('flash', 'phred', 'int'),
+    num_threads = config.param( 'flash', 'num_threads', 'int')
+    )
+    return job
+
+def tags_qc(infile, rev_primer, fwd_primer, outfile, outfile_failed):
+        
+    job = Job(
+        [infile],
+        [outfile, outfile_failed],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+tagsQC.pl \\
+ --infile {infile} \\""".format(
+     infile = infile
+    )
+
+    if(rev_primer != "null"):
+        job.command+="""
+ --primer_3_prime {rev_primer} \\
+ --length_3_prime {length_3_prime} \\""".format(
+            rev_primer = rev_primer,
+            length_3_prime = config.param('tags_QC', 'length3Prime', 'int') 
+        )
+
+    if(fwd_primer != "null"):
+        job.command+="""
+ --primer_5_prime {fwd_primer} \\
+ --length_5_prime {length_5_prime} \\""".format(
+            fwd_primer = fwd_primer,
+            length_5_prime = config.param( 'tags_QC', 'length5Prime', 'int')
+        )
+    job.command+="""
+ --qscore_1 {qscore1} \\
+ --qscore_2 {qscore2} \\
+ --outfile {outfile} \\
+ --outfile_failed {outfile_failed} \\
+ --num_threads {num_threads} \\
+ --qual {qual} \\
+ --lq_threshold {lq_threshold} \\
+ --primer_mismatch {primer_mismatch} \\
+ --min_length {min_length} \\
+ --N {N}""".format(
+        qscore1 = config.param('tags_QC', 'qscore1', 'int'),
+        qscore2 = config.param('tags_QC', 'qscore2', 'int'),
+        outfile = outfile,
+        outfile_failed = outfile_failed,
+        num_threads =  config.param('tags_QC', 'num_threads', 'int'),
+        qual = config.param('default', 'qual', 'int'),
+        lq_threshold = config.param('tags_QC', 'lq_threshold', 'int'),
+        primer_mismatch = config.param( 'tags_QC', 'primerMismatch', 'float'),
+        min_length = config.param('tags_QC', 'minlength', 'int'),
+        N = config.param('tags_QC', 'N', 'int')
+    )
+                
+    return job
+
+def count_report(rA_files, rA_names, analysis_type, barcodes_dist, otu_table, obs_table, outfile):
+        
+    job = Job(
+        [otu_table],
+        [outfile],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+    
+    cmd = "countReport.pl \\\n"
+
+    for file in rA_files:
+        cmd += " --file " + file + " \\\n"
+
+    for name in rA_names:
+        cmd += " --name " + name + " \\\n"
+    
+    cmd += " --analysisType " + analysis_type + " \\\n"
+    cmd += " --barcodesDist " + barcodes_dist + " \\\n"
+    cmd += " --OTUtable " + otu_table + " \\\n"
+    cmd += " --obsTable " + obs_table + " \\\n"
+    cmd += " > " + outfile
+     
+    job.command = cmd
+                    
+    return job
+
+def clustering_dnaclust(infile, barcodes, outdir, reads_type):
+       
+    script = ""
+    if reads_type == "short_reads":
+        script = "clusteringShortReadsDnaclust.pl"
+    elif reads_type == "long_reads":
+        script = "clusteringLongReadsDnaclust.pl"
+    else:
+        sys.stderr.write("[clustering] reads_type = short_reads OR long_reads\n")
+
+    job = Job(
+        [infile],
+        [os.path.join(outdir, "obs.fasta"), os.path.join(outdir, "obs.tsv")],
+        [
+            ['vsearch', 'module_vsearch'],
+            ['dnaclust', 'module_dnaclust'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+{script} \\
+ --infile_fastq {infile} \\
+ --ref_db {ref_db} \\
+ --barcodes {barcodes} \\
+ --outdir {outdir} \\
+ --first_round {first_round} \\
+ --second_round {second_round} \\
+ --lowAbunCutOff {lowAbunCutOff} \\
+ --num_threads {num_threads}""".format(
+    infile = infile,
+    ref_db =  config.param('DB', 'chimeras', 1, 'filepath'),
+    barcodes = barcodes,
+    outdir = outdir,
+    lowAbunCutOff = config.param('clustering', 'lowAbunCutOff', 'int'),
+    first_round = config.param('clustering', 'first_round', 'float'),
+    second_round = config.param('clustering', 'second_round', 'float'),
+    num_threads =  config.param('clustering', 'num_threads', 'int'),
+    script = script
+    )
+    
+    return job
+
+def clustering_vsearch(infile, barcodes, outdir, reads_type):
+       
+    script = ""
+    if reads_type == "short_reads":
+        script = "clusteringShortReadsVsearch.pl"
+    elif reads_type == "long_reads":
+        script = "clusteringLongReadsVsearch.pl"
+    else:
+        sys.stderr.write("[clustering] reads_type = short_reads OR long_reads\n")
+
+    job = Job(
+        [infile],
+        [outdir + "/obs.fasta", outdir + "/obs.tsv"],
+        [
+            ['vsearch', 'module_vsearch'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+    job.command="""
+{script} \\
+ --infile_fastq {infile} \\
+ --ref_db {ref_db} \\
+ --barcodes {barcodes} \\
+ --outdir {outdir} \\
+ --first_round {first_round} \\
+ --second_round {second_round} \\
+ --lowAbunCutOff {lowAbunCutOff} \\
+ --num_threads {num_threads}""".format(
+    infile = infile,
+    ref_db =  config.param('DB', 'chimeras', 1, 'filepath'),
+    barcodes = barcodes,
+    outdir = outdir,
+    lowAbunCutOff = config.param('clustering', 'lowAbunCutOff', 'int'),
+    first_round = config.param('clustering', 'first_round', 'float'),
+    second_round = config.param('clustering', 'second_round', 'float'),
+    num_threads =  config.param('clustering', 'num_threads', 'int'),
+    script = script
+    )
+    
+    return job
+
+def clustering_deblur(infile, indir, outdir, outfile_biom, outfile_fasta, done_file):
+       
+
+    job = Job(
+        [infile],
+        [outfile_biom, outfile_fasta, done_file],
+        [
+            ['deblur', 'module_deblur'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+
+#deblur workflow --seqs-fp ./infiles/ --output-dir ./deblur_outdir/  --overwrite -t 100
+    job.command="""
+deblur workflow --seqs-fp {indir} \\
+ --overwrite \\
+ -t {trim_length} \\
+ --output-dir {outdir} \\
+ -O {num_threads}  --indel-max {indel_max}  --min-reads {min_reads} --min-size {min_size} && \\
+ touch {done_file}""".format(
+    indir = indir,
+    outdir = outdir,
+    num_threads = config.param('clustering', 'num_threads', 1, 'int'),
+    trim_length = config.param('clustering', 'trim_length', 1, 'int'),
+    indel_max = config.param('clustering', 'indel_max', 1, 'int'),
+    min_reads = config.param('clustering', 'min_reads', 1, 'int'),
+    min_size = config.param('clustering', 'min_size', 1, 'int'),
+    done_file = done_file
+ )
+    
+    return job
+
+def postprocess_deblur(done_file, deblur_biom, deblur_tsv, deblur_fasta, outfile_tsv, outfile_fasta):
+       
+    job = Job(
+        [deblur_biom, deblur_fasta, done_file],
+        [deblur_tsv, outfile_tsv, outfile_fasta],
+        [
+            ['qiime', 'module_qiime'],
+            ['qiime-dependencies', 'module_qiime-dependencies'],
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl'],
+            ['lapack', 'module_lapack']
+        ]
+    )
+
+#deblur workflow --seqs-fp ./infiles/ --output-dir ./deblur_outdir/  --overwrite -t 100
+    job.command="""
+biom convert \\
+  -i {deblur_biom} \\
+  -o {deblur_tsv} \\
+  --to-tsv && \\
+convertDeblurIds.pl \\
+  --infile_tsv {deblur_tsv} \\
+  --infile_fasta {deblur_fasta} \\
+  --outfile_tsv {outfile_tsv} \\
+  --outfile_fasta {outfile_fasta}""".format(
+    deblur_biom = deblur_biom,
+    deblur_fasta = deblur_fasta,
+    deblur_tsv = deblur_tsv,
+    outfile_tsv = outfile_tsv,
+    outfile_fasta = outfile_fasta
+ )
+    
+    return job
+
+def remove_chimeras_deblur(infile_tsv, infile_fasta, outdir, outfile_tsv, outfile_fasta):
+       
+    job = Job(
+        [infile_fasta, infile_tsv],
+        [outfile_fasta, outfile_tsv],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl'],
+            ['vsearch', 'module_vsearch']
+        ]
+    )
+
+#deblur workflow --seqs-fp ./infiles/ --output-dir ./deblur_outdir/  --overwrite -t 100
+    job.command="""
+scanningForChimeras.pl \\
+  --infile_tsv {infile_tsv} \\
+  --infile_fasta {infile_fasta} \\
+  --outdir {outdir} \\
+  --ref_db {ref_db} \\
+  --num_threads {num_threads}""".format(
+    infile_fasta = infile_fasta,
+    infile_tsv = infile_tsv,
+    ref_db = config.param('DB', 'chimeras', 1, 'filepath'),
+    num_threads =  config.param('clustering', 'num_threads', 'int'),
+    outfile_tsv = outfile_tsv,
+    outfile_fasta = outfile_fasta,
+    outdir = outdir
+ )
+    
+    return job
+
+def cleanup(tmpdir):
+        
+    job = Job(
+        [""], 
+        [""],
+        [
+            ['tools', 'module_tools']
+        ]
+    )
+    
+    job.command="""
+rm  {tmpdir} -rf""".format(
+    tmpdir = tmpdir
+    )
+    return job
+
+def templateSub(outdir):
+        
+    job = Job(
+        ["undef"],
+        ["undef"],
+        [
+            ['memtime', 'module_memtime']
+        ]
+    )
+    job.command="memtime"
+
+    return job
+
+
