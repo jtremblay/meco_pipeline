@@ -11,7 +11,7 @@ from collections import defaultdict
 import json
 import sys
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.scheduler import *
 from core.step import *

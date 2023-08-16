@@ -5,7 +5,7 @@ import collections
 import logging
 import os
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 
 log = logging.getLogger(__name__)

@@ -66,7 +66,7 @@ def kmernator(infiles, outfiles, outdir):
         outfiles,
         [
             ['memtime', 'moduleVersion.memtime'],
-            ['caf_tools', 'moduleVersion.caf_tools'],
+            ['meco_tools', 'moduleVersion.meco_tools'],
             ['kmernator', 'moduleVersion.kmernator'],
             ['gcc', 'moduleVersion.gcc'],
             ['openmpi', 'moduleVersion.openmpi']
@@ -142,7 +142,7 @@ memtime mpiexec -n {num_threads} Ray -k {kmer} \\
 #        [outfile],
 #        [
 #            ['memtime', 'moduleVersion.memtime'],
-#            ['caf_tools', 'moduleVersion.caf_tools']
+#            ['meco_tools', 'moduleVersion.meco_tools']
 #        ]
 #    )
 #    job.command="""
@@ -299,7 +299,7 @@ def canopy(infile, prefix, out_clusters, out_profiles):
         [out_clusters, out_profiles],
         [
             ['memtime', 'moduleVersion.memtime'],
-            ['tools', 'moduleVersion.caf_tools'],
+            ['tools', 'moduleVersion.meco_tools'],
             ['canopy', 'moduleVersion.canopy']
         ]
     )
@@ -333,7 +333,7 @@ def extract_canopy_contigs(contigs, outdir, canopies):
         [outfile1, outfile2],
         [
             ['memtime', 'moduleVersion.memtime'],
-            ['tools', 'moduleVersion.caf_tools'],
+            ['tools', 'moduleVersion.meco_tools'],
             ['bwa', 'moduleVersion.bwa']
         ]
     )
@@ -357,7 +357,7 @@ def parse_canopies(infile, outfile):
         [outfile],
         [
             ['memtime', 'moduleVersion.memtime'],
-            ['caf_tools', 'moduleVersion.caf_tools']
+            ['meco_tools', 'moduleVersion.meco_tools']
         ]
     )
 
@@ -379,7 +379,7 @@ memtime parseCanopies.pl \\
 #        [out_clusters, out_profiles],
 #        [
 #            ['memtime', 'moduleVersion.memtime'],
-#            ['tools', 'moduleVersion.caf_tools']
+#            ['tools', 'moduleVersion.meco_tools']
 #        ]
 #    )
 #    job.command="""
@@ -420,7 +420,7 @@ def extract_reads1(bams, outdir, clusters):
         [
             ['memtime', 'moduleVersion.memtime'],
             ['samtools', 'moduleVersion.samtools'],
-            ['caf_tools', 'moduleVersion.caf_tools']
+            ['meco_tools', 'moduleVersion.meco_tools']
         ]
     )
     
@@ -452,7 +452,7 @@ def extract_reads2(bams, outdir, clusters):
         [
             ['memtime', 'moduleVersion.memtime'],
             ['samtools', 'moduleVersion.samtools'],
-            ['caf_tools', 'moduleVersion.caf_tools']
+            ['meco_tools', 'moduleVersion.meco_tools']
         ]
     )
     

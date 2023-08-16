@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2023 INRS - Centre Armand-Frappier
+#Copyright (C) 2023 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -135,7 +135,7 @@ def cat_fastqs_and_convert_to_fasta(infiles, outfile, outfile_bp):
         [outfile, outfile_bp],
         [
             ['perl', 'module_perl'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -207,7 +207,7 @@ def compile_assembly_stats(infile, outfile):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""

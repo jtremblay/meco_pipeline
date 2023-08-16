@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2019 INRS - Centre Armand-Frappier
+#Copyright (C) 2019 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -40,7 +40,7 @@ import time
 # Append pipeline directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(sys.argv[0]))))
 
-# GenPipes/CAF Modules
+# GenPipes/MECO Modules
 from core.config import *
 from core.job import *
 from core.pipeline import *
@@ -52,7 +52,7 @@ from pipelines import common
 # Global scope variables
 log = logging.getLogger(__name__)
 
-class Metagenomics(common.NRCPipeline):
+class Metagenomics(common.MECOPipeline):
     """
     Shotgun Metagenomics Pipeline
     Written by Julien Tremblay

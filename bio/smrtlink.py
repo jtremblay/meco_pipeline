@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2014, 2015, 2016, 2017, 2018, 2019 INRS - Centre Armand-Frappier
+# Copyright (C) 2014, 2015, 2016, 2017, 2018, 2019 Julien Tremblay
 
-# This file is part of NRC Pipelines.
+# This file is part of MECO Pipelines.
 #
 # MUGQIC Pipelines is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -16,13 +16,13 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with NRC Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with MECO Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
 import os
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 
@@ -34,7 +34,7 @@ def bax5_to_subreads(indir, outdir):
         [(outdir + "_generate_bam_subreads.done")],
         [
             ['smrtlink', 'module_smrtlink'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 

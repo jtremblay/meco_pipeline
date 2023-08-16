@@ -129,7 +129,7 @@ def filtering(fofn, input_xml, params_xml, output_dir, log):
         [
             ['smrtanalysis_filtering', 'module_prinseq'],
             ['smrtanalysis_filtering', 'module_smrtanalysis'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ],
         command="""\
 bash -c 'set +u && source \$SEYMOUR_HOME/etc/setup.sh && set -u && \\

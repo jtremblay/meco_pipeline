@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2023 INRS - Centre Armand-Frappier
+#Copyright (C) 2023 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -37,10 +37,10 @@ import sys
 import errno
 import time
 
-# Append caf_pipeline directory to Python library path
+# Append meco_pipeline directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(sys.argv[0]))))
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 from core.pipeline import *
@@ -64,7 +64,7 @@ def mkdir_p(path):
 # Global scope variables
 log = logging.getLogger(__name__)
 
-class GenomeAnnotater(common.CAFPipeline):
+class GenomeAnnotater(common.MECOPipeline):
     
     def gene_prediction(self):
         

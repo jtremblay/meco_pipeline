@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2022 INRS - Centre Armand-Frappier
+#Copyright (C) 2022 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -29,7 +29,7 @@
 
 # Python Standard Modules
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 
@@ -93,7 +93,7 @@ def size_select(infile_fastq, outfile_passed, outfile_failed):
         [infile_fastq],
         [outfile_passed, outfile_failed], 
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -167,7 +167,7 @@ def make_bowtie2_index(fasta, bwt):
         [
             
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
         ]
     )
@@ -267,7 +267,7 @@ def dereplicate(infiles, outfile):
         infiles,
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -284,7 +284,7 @@ def generate_matrix(infile, outdir):
         [infile],
         [os.path.join(outdir, "obs.tsv"), os.path.join(outdir, "obs.fasta")],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -303,7 +303,7 @@ def filter_by_abundance(infile_tsv, infile_fasta, outfile_tsv, outfile_fasta, ou
         [infile_tsv, infile_fasta],
         [outfile_tsv, outfile_fasta, outfile_fasta_rc],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -332,7 +332,7 @@ def normalize(infile, fasta, outfile_rpkm):
         [infile, fasta],
         [outfile_rpkm, os.path.join(dirname, "obs_length.tsv")],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -358,7 +358,7 @@ def normalize_mirna_table(infile, fasta, outfile_rpkm):
         [infile, fasta],
         [outfile_rpkm, os.path.join(dirname, "obs_length.tsv")],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -395,7 +395,7 @@ def blastn_array_job(indir, inprefix, outdir, outprefix, prefix, infiles, outfil
         all_outfiles,
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -442,7 +442,7 @@ def blastn(infile, outfile, db):
         [outfile],
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -474,7 +474,7 @@ def filter_blast_hits(infile, outfile_filtered):
         [infile],
         [outfile_filtered],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -502,7 +502,7 @@ def filter_blast_hits_for_targets_finding(infile, outfile_filtered, outfile_filt
         [infile],
         [outfile_filtered, outfile_filtered_best],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -536,7 +536,7 @@ def merge_tables(infile_abundance, infile_mature, outfile):
         [infile_abundance, infile_mature],
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -642,7 +642,7 @@ def ssearch(infile_fasta, infile_reference_dir, outfile):
         [infile_fasta],
         [outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['fasta36', 'module_fasta36']
         ]
     )
@@ -685,7 +685,7 @@ def merge_chunks(indir, outfile, number_of_chunks, prefix):
         infiles, 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -704,7 +704,7 @@ def merge_chunks_generic(infiles, outfile):
         infiles, 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -833,7 +833,7 @@ def merge_flagstats(infiles_fs, infiles_qc, outfile):
         infiles_fs + infiles_qc,
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 

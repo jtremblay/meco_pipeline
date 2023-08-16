@@ -1,22 +1,22 @@
 #!/usr/bin/env python
 
 ################################################################################
-# Copyright (C) 2023 INRS - Centre Armand-Frappier
+# Copyright (C) 2023 Julien Tremblay
 #
-# This file is part of CAF Pipelines
+# This file is part of MECO Pipelines
 #
-# CAF Pipelines is free software: you can redistribute it and/or modify
+# MECO Pipelines is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
 #
-# CAF Pipelines is distributed in the hope that it will be useful,
+# MECO Pipelines is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with CAF Pipelines.  If not, see <http://www.gnu.org/licenses/>.
+# along with MECO Pipelines.  If not, see <http://www.gnu.org/licenses/>.
 ################################################################################
 
 # Python Standard Modules
@@ -24,10 +24,10 @@ import logging
 import os
 import sys
 
-# Append caf_pipelines directory to Python library path
+# Append meco_pipelines directory to Python library path
 #sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(sys.argv[0])))))
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 from bio.readset import *
@@ -38,7 +38,7 @@ from pipelines import common
 
 log = logging.getLogger(__name__)
 
-class PacBioAssembly(common.CAFPipeline):
+class PacBioAssembly(common.MECOPipeline):
     """
     PacBio Assembly Pipeline
     Written by Julien Tremblay

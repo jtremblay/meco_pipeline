@@ -9,7 +9,7 @@ import sys
 # Append mugqic_pipeline directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(sys.argv[0]))))
 
-# CAF Modules
+# MECO Modules
 from core.job import *
 from core.pipeline import *
 from bio.readset import *

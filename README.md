@@ -14,8 +14,7 @@ The meco pipeline's (this repository) core libraries were forked from the GenPip
   ShotgunMG has been published in Briefings in Bioinformatics - https://doi.org/10.1093/bib/bbac443. ShotgunMG is also available as a standalone Nextflow pipeline (https://github.com/jtremblay/ShotgunMG).
 
 ## Requirements
-The software from this repository requires Python, Perl and R and has been tested with the following versions:
-Python/3.11.3; Perl/5.26; R/4.3.1
+meco pipeline requires many third party software. More details in the user guides mentionned below.
 
 This pipeline infrastructure relies on its companion meco_tools repository (https://github.com/jtremblay/meco_tools).
 

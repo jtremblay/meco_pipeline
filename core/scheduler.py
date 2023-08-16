@@ -4,7 +4,7 @@
 import datetime
 import os
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 
 # Output comment separator line
@@ -175,10 +175,10 @@ umask 0002
 set -o pipefail
 {install_home_and_modules}
 {job.command_with_modules}
-CAF_STATE=\$?
-echo CAF_exitStatus:\$CAF_STATE
-if [ \$CAF_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-exit \$CAF_STATE" > $SCRIPTS_DIR/{job.name}.sh && 
+MECO_STATE=\$?
+echo MECO_exitStatus:\$MECO_STATE
+if [ \$MECO_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+exit \$MECO_STATE" > $SCRIPTS_DIR/{job.name}.sh && 
 {cluster_submit_cmd} $SCRIPTS_DIR/{job.name}.sh""".format(
         job = job,
         install_home_and_modules = "export TMPDIR=" + config.param('default', 'tmpdir', 1, 'string') + " && export INSTALL_HOME=" + config.param('default', 'install_home', 1, 'string') + " && source " + config.param('default', 'env_modules', 1, 'filepath') + " && module use \$INSTALL_HOME/modulefiles",
@@ -261,10 +261,10 @@ JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
 rm -f $JOB_DONE && \\
 set -o pipefail
 {job.command_with_modules}
-CAF_STATE=\$PIPESTATUS
-echo CAF_exitStatus:\$CAF_STATE
-if [ \$CAF_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-exit \$CAF_STATE" | \\
+MECO_STATE=\$PIPESTATUS
+echo MECO_exitStatus:\$MECO_STATE
+if [ \$MECO_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+exit \$MECO_STATE" | \\
 """.format(job=job)
                     
                     cluster_submit_cmd     = config.param(job.name, 'cluster_submit_cmd')     
@@ -367,10 +367,10 @@ JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
 rm -f $JOB_DONE && \\
 set -o pipefail
 {job.command_with_modules}
-CAF_STATE=\$PIPE_STATUS
-echo CAF_exitStatus:\$CAF_STATE
-if [ \$CAF_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
-exit \$CAF_STATE" | \\
+MECO_STATE=\$PIPE_STATUS
+echo MECO_exitStatus:\$MECO_STATE
+if [ \$MECO_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
+exit \$MECO_STATE" | \\
 """.format(job=job)
                     
                     cluster_submit_cmd     = config.param(job.name, 'cluster_submit_cmd')     
@@ -425,13 +425,13 @@ class BatchScheduler(Scheduler):
 JOB_NAME={job.name}
 JOB_DONE={job.done}
 printf "\\n$SEPARATOR_LINE\\n"
-echo "Begin CAF Job $JOB_NAME at `date +%FT%H.%M.%S`" && \\
+echo "Begin MECO Job $JOB_NAME at `date +%FT%H.%M.%S`" && \\
 rm -f $JOB_DONE && \\
 {command_with_modules_and_unload}
-CAF_STATE=$PIPESTATUS
-echo "End CAF Job $JOB_NAME at `date +%FT%H.%M.%S`"
-echo CAF_exitStatus:$CAF_STATE
-if [ $CAF_STATE -eq 0 ] ; then touch $JOB_DONE ; else return 0 ; fi""".format(
+MECO_STATE=$PIPESTATUS
+echo "End MECO Job $JOB_NAME at `date +%FT%H.%M.%S`"
+echo MECO_exitStatus:$MECO_STATE
+if [ $MECO_STATE -eq 0 ] ; then touch $JOB_DONE ; else return 0 ; fi""".format(
                             job=job,
                             separator_line=separator_line,
                             #command_with_modules=re.sub(r"\\(.)", r"\1", job.command_with_modules)

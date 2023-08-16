@@ -6,7 +6,7 @@ import logging
 import os
 import re
 
-# CAF Modules
+# MECO Modules
 from bio.sample import *
 from bio.mag import *
 

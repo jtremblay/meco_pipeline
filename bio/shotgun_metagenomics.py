@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2020 INRS - Centre Armand-Frappier
+#Copyright (C) 2020 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -29,7 +29,7 @@
 
 # Python Standard Modules
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 
@@ -234,7 +234,7 @@ def duk_gz_matched_only(infile, outfile, log, db):
         [outfile, log],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl'],
             ['duk', 'module_duk']
         ]
@@ -266,7 +266,7 @@ def join_reads(fastq1, fastq2, outfile):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -289,7 +289,7 @@ def merge_duk_logs_interleaved(logs, readset_ids, outfile):
         logs,
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -308,7 +308,7 @@ def merge_duk_sub_logs_interleaved(logs, readset_ids, outfile):
         logs,
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -327,7 +327,7 @@ def create_interleaved_fastq(reads1, reads2, tmp, outfile):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['pigz', 'module_pigz']
         ]
     )
@@ -356,7 +356,7 @@ def remove_unpaired_reads_and_split(infile, unpaired_reads1, unpaired_reads2, pa
         [outfile, unpaired_reads1, unpaired_reads2, paired_reads1, paired_reads2],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -734,7 +734,7 @@ def compile_assembly_stats(infile, outfile):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -755,7 +755,7 @@ def get_insert_size(indir, outfile, flagstats): #flagstats just here for depende
         [
             
             ['python3', 'module_python3'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['samtools', 'module_samtools']
         ]
     )
@@ -779,7 +779,7 @@ def sspace(infile, libraries, outdir):
         [outdir],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['sspace', 'module_sspace']
         ]
     )
@@ -842,7 +842,7 @@ def make_index(fasta, bwt):
         [
             
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
         ]
     )
@@ -861,7 +861,7 @@ def fasta_to_bed(fasta, bed):
         [bed],
         [
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
         ]
     )
@@ -881,7 +881,7 @@ def gff_to_bed(gff, bed):
         [bed],
         [
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
         ]
     )
@@ -901,7 +901,7 @@ def flagstats(infile, outfile):
         [outfile],
         [
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -926,7 +926,7 @@ def merge_flagstats(infiles_fs, infiles_qc, infiles_bbduk, outfile, infiles_bbdu
         infiles,
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1176,7 +1176,7 @@ def blastn(infile, outfile, outdir, prefix):
         [outfile],
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1233,7 +1233,7 @@ def blastn_array_job(indir, inprefix, outdir, outprefix, prefix, infiles, outfil
         all_outfiles,
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command = ""
@@ -1309,7 +1309,7 @@ def blastp_array_job(indir, inprefix, outdir, outprefix, prefix, infiles, outfil
         all_outfiles,
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command = ""
@@ -1378,7 +1378,7 @@ def diamond_blastp_nr_array_job(indir, inprefix, outdir, outprefix, prefix, infi
         all_outfiles,
         [
             ['diamond', 'module_diamond'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command = ""
@@ -1443,7 +1443,7 @@ def diamond_blastp_kegg_array_job(indir, inprefix, outdir, outprefix, prefix, in
         all_outfiles,
         [
             ['diamond', 'module_diamond'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -1493,7 +1493,7 @@ def ublastp(infile, outfile, outdir, db):
         [
             
             ['usearch', 'module_usearch'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1529,7 +1529,7 @@ def keep_ublast_best_hit(indir, outfile, number_of_chunks, prefix):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -1548,7 +1548,7 @@ def annotate_ublast(infile, outfile, annotations):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -1571,7 +1571,7 @@ def blastp(infile, outfile, outdir, db):
         [outfile],
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1602,7 +1602,7 @@ def parse_kegg(infile, outfile):
         [infile], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -1628,7 +1628,7 @@ def parse_kofam(infile, outfile, hmmsearch=False):
         [infile], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     if hmmsearch:
@@ -1655,7 +1655,7 @@ def keep_blast_best_hit(infile, outfile):
         [infile], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -1680,7 +1680,7 @@ def extract_taxonomy(infile, outfile, accession_to_tax):
         [infile],
         [outfile], 
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -1707,7 +1707,7 @@ def generate_feature_table(infile_tax, infile_abundance, outfile):
         [infile_tax, infile_abundance],
         [outfile], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -1730,7 +1730,7 @@ def generate_feature_table_rrna(infile_tax, infile_abundance, outfile):
         [infile_tax, infile_abundance],
         [outfile], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -1753,7 +1753,7 @@ def generate_feature_table_reads_centric(infile_rdps, names, outfile):
         infile_rdps,
         [outfile], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -1793,7 +1793,7 @@ def rpsblast_array_job(indir, inprefix, outdir, outprefix, infiles, outfiles, do
         all_outfiles,
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1840,7 +1840,7 @@ def rpsblast(infile, outfile, outdir, db):
         [outfile],
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1891,7 +1891,7 @@ def hmmscan_array_job(indir, inprefix, outdir, outprefix, infiles,
         infiles,
         all_outfiles,
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['hmmer', 'module_hmmer']
         ]
     )
@@ -1938,7 +1938,7 @@ def parse_hmms(infile, outfile):
         [outfile],
         [
             ['perl', 'module_perl'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 
@@ -1965,7 +1965,7 @@ def hmmscan(infile, prefix, outdir, db):
         [tblout, domtblout, pfamtblout],
         [
             ['blast', 'module_blast'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['hmmer', 'module_hmmer']
         ]
     )
@@ -2000,7 +2000,7 @@ def split_rrna(infile_tab, infile_fasta,
         [arc_5S, bac_5S, euk_5S, arc_16S, bac_16S, euk_18S, arc_23S, bac_23S, euk_28S, arc_bac_16S],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -2031,7 +2031,7 @@ def rrna_to_bed(infile, outfile):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -2052,7 +2052,7 @@ def barrnap_fna_to_bed(infile, outfile):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -2073,7 +2073,7 @@ def rdp_to_taxonomy(infile, outfile):
         [infile],
         [outfile], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -2099,7 +2099,7 @@ def estimate_number_of_chunks(infile, outfile, chunk_file_size):
         [infile],
         [outfile], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -2138,7 +2138,7 @@ def exonerate(infile, outdir, number_of_chunks_file, prefix):
         [outfile],
         [
             ['exonerate', 'module_exonerate'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -2186,7 +2186,7 @@ def exonerate_direct(infile, outdir, num_chunks, prefix):
         [outfile] + outfiles,
         [
             ['exonerate', 'module_exonerate'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -2219,7 +2219,7 @@ def merge_chunks(indir, outfile, number_of_chunks, prefix):
         infiles, 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -2241,7 +2241,7 @@ def edger(abundance, design_file, outdir):
         [dummy_outfile],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -2275,7 +2275,7 @@ def edger_glm(abundance, mapping_file, outdir):
         [abundance, mapping_file], 
         [dummy_outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -2312,7 +2312,7 @@ def generate_gff(infile_gff, infile_fasta, kegg, pfam, cog, kog,
         [infile_gff, infile_fasta, kegg, pfam, cog, kog, taxonomy, ublast_nr], 
         [outfile_gff, outfile_fasta, outfile_annotations],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -2354,7 +2354,7 @@ def generate_gc_table(infile, contigs, abundance, gc_table):
         [gc_table],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -2391,7 +2391,7 @@ def merge_chunks_hmms(indir, outdir, number_of_chunks, prefix, out_prefix):
         [tblout_out, domtblout_out],
         [
             ['exonerate', 'module_exonerate'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -2595,7 +2595,7 @@ def maxbin2(contigs, abundance, outdir, out_prefix, dummy_outfile):
             ['maxbin2','module_maxbin2'],
             ['fraggenescan','module_fraggenescan'],
             ['hmmer3','module_hmmer'],
-            ['caf_tools','module_tools']
+            ['meco_tools','module_tools']
         ]
     )
    #TODO rename .fasta to .fa after maxin2 has run 
@@ -2708,7 +2708,7 @@ def summarize_bins(checkm, parsed_bins, contigs_abundance, contigs_indir, outfil
         [checkm, parsed_bins, contigs_abundance], 
         [outfile, bins_list],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -2738,7 +2738,7 @@ def generate_link_file(parsed_bins, annotations, bins_list, link):
         [link],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -2762,7 +2762,7 @@ def bins_feature_table(summarized_bins, parsed_bins, contigs_abundance, outfile)
         [summarized_bins, parsed_bins, contigs_abundance], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -2914,7 +2914,7 @@ def generate_feature_table_consensus(infile_taxonomy, infile_abundance, outfile_
         [infile_taxonomy, infile_abundance],
         [outfile, outfile_taxonomy], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -3101,7 +3101,7 @@ def extract_silva_taxonomy(infile_blastn, abundance, accession_to_tax, outfile):
         [infile_blastn, abundance, accession_to_tax],
         [outfile], 
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3339,7 +3339,7 @@ def trnascanse_array_job(indir, inprefix, outdir, outprefix, prefix, infiles, ou
         [
             ['trnascanse', 'module_trnascanse'],
             ['infernal', 'module_infernal'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3393,7 +3393,7 @@ def split_barrnap_fna(infile_fasta, prefix, fiveS, SSU, LSU, twelveS, fiveeightS
         [infile_fasta], 
         outfiles,
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3417,7 +3417,7 @@ def concat_fasta(infiles, outfile):
         infiles, 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3435,7 +3435,7 @@ def rename_rrna_bed(infile, outfile):
         [infile], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3453,7 +3453,7 @@ def anvio_simplify_fasta_headers(infile, outfile):
         [infile], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3471,7 +3471,7 @@ def anvio_gene_calling(infile_faa, infile_gff, infile_rrna, outfile):
         [infile_faa, infile_gff, infile_rrna], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3524,7 +3524,7 @@ def anvio_generate_kegg_file(infile_blast, infile_blast_parsed, outfile):
         [infile_blast, infile_blast_parsed], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3546,7 +3546,7 @@ def anvio_generate_taxonomy_file(infile_gene_calls, infile_taxonomy, outfile):
         [infile_gene_calls, infile_taxonomy], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3568,7 +3568,7 @@ def anvio_generate_cog_file(infile_cog, outfile):
         [infile_cog], 
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3588,7 +3588,7 @@ def anvio_import_annotations(infile_done, infile_cog, infile_taxonomy, infile_ke
         [infile_cog, infile_taxonomy, infile_kegg, infile_done], 
         [done_file],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['anvio', 'module_anvio']
         ]
     )
@@ -3614,7 +3614,7 @@ def anvio_import_profiles(done_file, infile_bam, contigs_db, outdir, outfile):
         [done_file, infile_bam],
         [outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['anvio', 'module_anvio']
         ]
     )
@@ -3637,7 +3637,7 @@ def anvio_merge(profiles, contigs_db, outdir, outfile_done):
         profiles,
         [outfile_done, os.path.join(outdir, "PROFILE.db")],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['anvio', 'module_anvio']
         ]
     )
@@ -3664,7 +3664,7 @@ def anvio_run_hmm(infile_done, merged_profiles, contigs_db, done_file):
         [infile_done],
         [done_file],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['prodigal', 'module_prodigal'],
             ['hmmer', 'module_hmmer'],
             ['anvio', 'module_anvio']
@@ -3692,7 +3692,7 @@ def anvio_import_metadata(infile_done, profiles_db, outfile_done):
         [infile_done],
         [outfile_done],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['anvio', 'module_anvio']
         ]
     )
@@ -3718,7 +3718,7 @@ def anvio_generate_mag_file(infile_done, indir, outfile):
         [infile_done],
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3737,7 +3737,7 @@ def anvio_import_mags(infile_done, contigs_db, profiles_db, name, mag_file, outf
         [infile_done, profiles_db, mag_file],
         [outfile_done],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['anvio', 'module_anvio']
         ]
     )
@@ -3767,7 +3767,7 @@ def cat_bins_into_single_file(infile_done, indir, outfile):
         [infile_done],
         [outfile],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3786,7 +3786,7 @@ def calc_kmer_freq(infile, outfile):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )    
@@ -3809,7 +3809,7 @@ def clr_transform(infile, outfile):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R'],
             ['perl', 'module_perl']
         ]
@@ -3864,7 +3864,7 @@ def get_contigs_length_and_gc(infile, outfile):
         [infile],
         [outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -3887,7 +3887,7 @@ def parse_viral_contigs(infile, infile_fasta, infile_contigs_length_gc, infile_a
         [infile, infile_fasta, infile_contigs_length_gc, infile_annotations],
         [outfile, outfile_viral_contigs_list, outfile_viral_contigs_fasta],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -3943,7 +3943,7 @@ def kofamscan_array_job(indir, inprefix, outdir, outprefix, prefix, infiles, out
             ['kofamscan', 'module_kofamscan'],
             ['hmmer', 'module_hmmer'],
             ['parallel', 'module_parallel'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     

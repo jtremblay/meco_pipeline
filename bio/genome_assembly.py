@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2023 INRS - Centre Armand-Frappier
+#Copyright (C) 2023 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -29,7 +29,7 @@
 
 # Python Standard Modules
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 
@@ -79,7 +79,7 @@ def create_interleaved_fastq(reads1, reads2, tmp, outfile):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['pigz', 'module_pigz']
         ]
     )
@@ -311,7 +311,7 @@ def compile_assembly_stats(infile, outfile):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -384,7 +384,7 @@ def flagstats(infile, outfile):
         [
             
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -429,7 +429,7 @@ def make_index(fasta, bwt):
         [
             
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
         ]
     )
@@ -450,7 +450,7 @@ def fasta_to_bed(fasta, bed):
         [
             
             ['samtools', 'module_samtools'],
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
         ]
     )
@@ -496,7 +496,7 @@ def merge_flagstats(infiles_fs, infiles_qc, outfile):
         [outfile],
         [
             
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
     job.command="""
@@ -516,7 +516,7 @@ def get_insert_size(indir, outfile, flagstats): #flagstats just here for depende
         [outfile],
         [
             
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['samtools', 'module_samtools']
         ]
     )
@@ -649,7 +649,7 @@ def generate_otu_table_consensus(infile_taxonomy, infile_abundance, outfile_taxo
         [infile_taxonomy, infile_abundance],
         [outfile], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )
@@ -676,7 +676,7 @@ def generate_gff(infile_gff, infile_fasta, kegg, pfam, cog, kog,
         [infile_gff, infile_fasta, kegg, pfam, cog, kog, taxonomy, ublast_nr], 
         [outfile_gff, outfile_fasta, outfile_annotations],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -754,7 +754,7 @@ def generate_taxonomy_table_consensus(infile_taxonomy, outfile_taxonomy):
         [infile_taxonomy],
         [outfile_taxonomy], 
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['perl', 'module_perl']
         ]
     )

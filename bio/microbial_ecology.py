@@ -2,7 +2,7 @@
 
 # Python Standard Modules
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 
@@ -1403,7 +1403,7 @@ def ancom_otus(feature_table, outdir, mapping_file):
             ['python3', 'module_python3']
         ]
     )
-#~/build/caf_tools/RRNATagger/ancom.py -i ./feature_table_filtered_bacteriaArchaea_rarefied_1000.tsv 
+#~/build/meco_tools/RRNATagger/ancom.py -i ./feature_table_filtered_bacteriaArchaea_rarefied_1000.tsv 
 # -m mapping_file3.tsv -o ./test_outdir/ -v Treatment -t 16
     job.command="""
 export OMP_NUM_THREADS=1 && \\

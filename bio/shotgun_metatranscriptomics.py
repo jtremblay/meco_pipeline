@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2023 INRS - Centre Armand-Frappier
+#Copyright (C) 2023 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -71,7 +71,7 @@ def merge_bedtools_counts(infiles, outfile_raw, outfile_normalized):
         [outfile_raw, outfile_normalized],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_caf_tools'],
+            ['tools', 'module_meco_tools'],
             ['R', 'module_R']
         ]
     )
@@ -95,7 +95,7 @@ def merge_htseq_counts(infiles_htseq, outfile_raw, outfile_normalized):
         [outfile_raw, outfile_normalized],
         [
             ['memtime', 'module_memtime'],
-            ['tools', 'module_caf_tools'],
+            ['tools', 'module_meco_tools'],
             ['R', 'module_R']
         ]
     )
@@ -123,7 +123,7 @@ def edger(abundance, design_file, outdir):
         [dummy_outfile],
         [
             ['memtime', 'module_memtime'],
-            ['caf_tools', 'module_caf_tools'],
+            ['meco_tools', 'module_meco_tools'],
             ['R', 'module_R']
         ]
     )
@@ -157,7 +157,7 @@ def edger_glm(abundance, mapping_file, outdir):
         [abundance, mapping_file], 
         [dummy_outfile],
         [
-            ['caf_tools', 'module_tools'],
+            ['meco_tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
@@ -193,7 +193,7 @@ def edger_single(infile, outfile):
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['caf_tools', 'module_caf_tools'],
+            ['meco_tools', 'module_meco_tools'],
             ['R', 'module_R']
         ]
     )
@@ -215,7 +215,7 @@ def rmarkdown_duk(log1, log2):
         [outfile],
         [
             ['memtime', 'module_memtime'],
-            ['caf_tools', 'module_caf_tools'],
+            ['meco_tools', 'module_meco_tools'],
             ['R', 'module_R']
         ]
     )
@@ -239,7 +239,7 @@ def explore_heatmaps(log_fc, normalized_significant, indir, outdir, date, gene_l
         [dummy_outfile],
         [
             ['memtime', 'module_memtime'],
-            ['caf_tools', 'module_caf_tools'],
+            ['meco_tools', 'module_meco_tools'],
             ['R', 'module_R'],
             ['pandoc', 'module_pandoc']
         ]

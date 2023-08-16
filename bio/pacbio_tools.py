@@ -296,7 +296,7 @@ def generate_fofns(sample_name, readset, outdir):
         [readset],
         [os.path.join(outdir, "generate_fofns.done")],
         [
-            ['caf_tools', 'module_tools']
+            ['meco_tools', 'module_tools']
         ]
     )
 

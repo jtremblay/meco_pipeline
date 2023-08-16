@@ -9,10 +9,10 @@ import re
 import sys
 import errno
 
-# Append caf_pipeline directory to Python library path
+# Append meco_pipeline directory to Python library path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(sys.argv[0]))))
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 from core.pipeline import *

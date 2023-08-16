@@ -2,7 +2,7 @@
 
 # Python Standard Modules
 
-# CAF Modules
+# MECO Modules
 from core.config import *
 from core.job import *
 
