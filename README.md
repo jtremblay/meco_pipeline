@@ -30,9 +30,9 @@ We provide a Ubuntu 22.04 image that contains all that is needed to run both Sho
 https://hub.docker.com/r/julio514/ubuntu
 
 **An exhaustive user guide is available here for AmpliconTagger: [User Guide](http://jtremblay.github.io/amplicontagger_guide.html)**
-
 **And here for ShotgunMG: [User Guide](http://jtremblay.github.io/shotgunmg_guide.html)**
 
-
-## Pipeline diagram
+## Pipeline diagrams
 http://jtremblay.github.io/PipelineViewer/amplicontagger.html
+http://jtremblay.github.io/PipelineViewer/shotgunmg.html
+
