@@ -743,34 +743,6 @@ class AmpliconTagger(common.MECOPipeline):
         job.name = "split_feature_table_" + self._organism_type
         job.name = "split_feature_table"
         jobs.append(job)
-            
-        # Rarefy tables to the specified arbitrary thresholds from the .ini file.
-        rarefaction_values_string = config.param('rarefaction', 'n_normalization', 1, 'string')
-        rarefaction_values = rarefaction_values_string.split(':')
-        
-        for rarefaction_value in rarefaction_values:
-            if not os.path.exists(os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value))):
-                os.makedirs(os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value)))
-             
-            job = microbial_ecology.rtk_multi_even(
-                os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + ".tsv"),
-                os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value), "rarefaction"),
-                "#FEATURE_ID",
-                remove_last_col = True
-            )
-            job.name = "rarefy_multi_norm_" + rarefaction_value
-            job.subname = "rarefaction"
-            jobs.append(job)
-
-            job = microbial_ecology.merge_rarefied_tables(
-                os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value), "rarefaction"),
-                os.path.join(self._lib_type_dir, "feature_tables", "feature_table.tsv"),
-                os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value), "rarefaction", "rtk.done"),
-                os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_rarefied_" + str(rarefaction_value) + ".tsv")
-            )
-            job.name = "merge_rarefied_tables_norm_" + rarefaction_value
-            job.subname = "merge_rarefied_tables"
-            jobs.append(job)
         
         # Then, normalize using edgeR with CPMs.
         job = microbial_ecology.normalize_feature_table(
@@ -780,6 +752,46 @@ class AmpliconTagger(common.MECOPipeline):
         job.name = "normalize_feature_table_target_organisms"
         job.subname = "normalization"
         jobs.append(job)
+        
+        # Then, normalize by simple percentage values (which in the end is the method that we still end up prettu much always using.
+        job = microbial_ecology.percentage_feature_table(
+            os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + ".tsv"),
+            os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_percentage.tsv")
+        )
+        job.name = "percentage_feature_table_target_organisms"
+        job.subname = "percentage"
+        jobs.append(job)
+       
+        # Since this procedure brought confusion to many, let's place it as optional.
+        if(config.param('DEFAULT', 'normalize_by_multiple_rarefactions', 1, 'string') == "yes"):
+            # Rarefy tables to the specified arbitrary thresholds from the .ini file.
+            rarefaction_values_string = config.param('rarefaction', 'n_normalization', 1, 'string')
+            rarefaction_values = rarefaction_values_string.split(':')
+            
+            for rarefaction_value in rarefaction_values:
+                if not os.path.exists(os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value))):
+                    os.makedirs(os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value)))
+                 
+                job = microbial_ecology.rtk_multi_even(
+                    os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + ".tsv"),
+                    os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value), "rarefaction"),
+                    "#FEATURE_ID",
+                    remove_last_col = True
+                )
+                job.name = "rarefy_multi_norm_" + rarefaction_value
+                job.subname = "rarefaction"
+                jobs.append(job)
+
+                job = microbial_ecology.merge_rarefied_tables(
+                    os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value), "rarefaction"),
+                    os.path.join(self._lib_type_dir, "feature_tables", "feature_table.tsv"),
+                    os.path.join(self._lib_type_dir, "feature_tables", "rarefactions", str(rarefaction_value), "rarefaction", "rtk.done"),
+                    os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_rarefied_" + str(rarefaction_value) + ".tsv")
+                )
+                job.name = "merge_rarefied_tables_norm_" + rarefaction_value
+                job.subname = "merge_rarefied_tables"
+                jobs.append(job)
+            
         
         # Convert tsv to biom
         #job = microbial_ecology.convert_tsv_to_biom_hdf5(
@@ -796,7 +808,8 @@ class AmpliconTagger(common.MECOPipeline):
     def prepare_tables_for_diversity(self):
        
         # Here set a common name for OTU table that will be used in downstream steps - makes life easier.
-        feature_table_rarefied   = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_rarefied_" + self._rarefaction_value + ".tsv")
+        #feature_table_rarefied   = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_rarefied_" + self._rarefaction_value + ".tsv")
+        feature_table_percentage = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_percentage.tsv")
         feature_table_normalized = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_filtered_" + self._organism_type + "_normalized.tsv")
         
         jobs = []
@@ -811,10 +824,10 @@ class AmpliconTagger(common.MECOPipeline):
         jobs.append(job)
         
         job = microbial_ecology.filter_and_sort_feature_table(
-            feature_table_rarefied,
-            os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_rarefied.tsv")
+            feature_table_percentage,
+            os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv")
         )
-        job.name = "filter_feature_table_rarefied"
+        job.name = "filter_feature_table_percentage"
         job.subname = "filter_feature_table"
         jobs.append(job)
            
@@ -822,7 +835,7 @@ class AmpliconTagger(common.MECOPipeline):
 
     def align(self):
         
-        curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_rarefied.tsv")
+        curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv")
         
         jobs = []
 
@@ -857,11 +870,11 @@ class AmpliconTagger(common.MECOPipeline):
        
         jobs = []
 
-        curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_rarefied.tsv")
+        curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv")
         
         plot_taxa_string_abs = ""
         plot_taxa_string_rel = ""
-        feature_table_prefix = "feature_table_final_rarefied"
+        feature_table_prefix = "feature_table_final_percentage"
         
         for i in range(1, config.param('summarize_taxonomy', 'taxonomy_depth', 1, 'int')):
             job = microbial_ecology.summarize_taxonomy_absolute(
@@ -933,8 +946,8 @@ class AmpliconTagger(common.MECOPipeline):
     def beta_diversity(self):
         jobs = []
         
-        curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_rarefied.tsv")
-        feature_table_prefix = "feature_table_final_rarefied"
+        curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv")
+        feature_table_prefix = "feature_table_final_percentage"
         
         job = microbial_ecology.beta_diversity(
             curr_feature_table,
@@ -1044,7 +1057,7 @@ class AmpliconTagger(common.MECOPipeline):
         for n in range:
 
             job = microbial_ecology.otu_heatmap(
-                os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_rarefied.tsv"),
+                os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv"),
                 os.path.join(self._lib_type_dir, "heatmap"),
                 "OTU_heatmap",
                 n
@@ -1095,7 +1108,7 @@ class AmpliconTagger(common.MECOPipeline):
             mapping_files = mapping_files.split(":")
             for mapping_file in mapping_files:
                 job = microbial_ecology.ancom_otus(
-                    os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_rarefied.tsv"),
+                    os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv"),
                     os.path.join(self._lib_type_dir, "DOA", "ancom"),
                     mapping_file
                 )

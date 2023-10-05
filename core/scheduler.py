@@ -367,7 +367,7 @@ JOB_OUTPUT=$JOB_OUTPUT_DIR/$JOB_OUTPUT_RELATIVE_PATH""".format(
 rm -f $JOB_DONE && \\
 set -o pipefail
 {job.command_with_modules}
-MECO_STATE=\$PIPE_STATUS
+MECO_STATE=\$PIPESTATUS
 echo MECO_exitStatus:\$MECO_STATE
 if [ \$MECO_STATE -eq 0 ] ; then touch $JOB_DONE ; fi
 exit \$MECO_STATE" | \\

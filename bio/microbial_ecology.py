@@ -444,6 +444,27 @@ normalizeFeatureTable.R \\
 
     return job
 
+def percentage_feature_table(feature_table, tsv_percentaged):
+    job = Job(
+        [feature_table],
+        [tsv_percentaged],
+        [
+            ['perl', 'module_perl'],
+            ['tools', 'module_tools'],
+            ['R', 'module_R']
+        ]
+    )
+#-m {m} && \\
+    job.command="""
+percentageFeatureTable.R \\
+  -i {feature_table} \\
+  -o {tsv_percentaged}""".format(
+        feature_table = feature_table,
+        tsv_percentaged = tsv_percentaged
+    )
+
+    return job
+
 #def summarize_taxonomy_absolute(biom, i, outdir):
 #    basename =  os.path.splitext(os.path.basename(biom))[0]
 #    

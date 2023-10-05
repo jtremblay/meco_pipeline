@@ -1865,7 +1865,7 @@ rpsblast \\
 
     return job
 
-def hmmscan_array_job(indir, inprefix, outdir, outprefix, infiles, 
+def hmmsearch_array_job(indir, inprefix, outdir, outprefix, infiles, 
                       tblouts, domtblouts, pfamtblouts, 
                       dones, db, job_scheduler):
     
@@ -1923,8 +1923,8 @@ touch {done}""".format(
     infile = infile,
     tblout = tblout,
     domtblout =  domtblout,
-    num_threads = config.param('hmmscan', 'num_threads', 1, 'int'),
-    evalue = config.param('hmmscan', 'evalue'),
+    num_threads = config.param('hmmsearch', 'num_threads', 1, 'int'),
+    evalue = config.param('hmmsearch', 'evalue'),
     hmm_dir = outdir,
     done = done,
     job_array_suffix = job_array_suffix
@@ -1949,7 +1949,7 @@ parseHmmsearch.pl \\
   """.format(
     infile = infile,
     outfile = outfile,
-    evalue = config.param('hmmscan', 'evalue')
+    evalue = config.param('hmmsearch', 'evalue')
     )
 
     return job

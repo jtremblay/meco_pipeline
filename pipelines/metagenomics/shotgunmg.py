@@ -1116,7 +1116,7 @@ class Metagenomics(common.MECOPipeline):
             #job.subname = "merge"
             #jobs.append(job)
         
-            job = shotgun_metagenomics.hmmscan_array_job(
+            job = shotgun_metagenomics.hmmsearch_array_job(
                 os.path.join(chunks_dir),
                 "Contigs_renamed.faa_chunk_",
                 os.path.join(hmmsearch_outdir),
@@ -1195,32 +1195,32 @@ class Metagenomics(common.MECOPipeline):
             outfiles.append(os.path.join(outdir, "trna_chunk_{:07d}.tsv".format(i)))
             dones.append(os.path.join(outdir, "trna_chunk_{:07d}.done".format(i)))
      
-        job = shotgun_metagenomics.trnascanse_array_job(
-            os.path.join(chunks_dir),
-            "Contigs.fasta_chunk_",
-            os.path.join(outdir),
-            "trna_chunk_",
-            "trnascanse",
-            infiles,
-            outfiles,
-            dones,
-            self._curr_scheduler
-        )
-        job.name = "trna_array_job"
-        job.subname = "trnascanse"
-        job.job_array_num_task = num_chunks
-        jobs.append(job)
+        #job = shotgun_metagenomics.trnascanse_array_job(
+        #    os.path.join(chunks_dir),
+        #    "Contigs.fasta_chunk_",
+        #    os.path.join(outdir),
+        #    "trna_chunk_",
+        #    "trnascanse",
+        #    infiles,
+        #    outfiles,
+        #    dones,
+        #    self._curr_scheduler
+        #)
+        #job.name = "trna_array_job"
+        #job.subname = "trnascanse"
+        #job.job_array_num_task = num_chunks
+        #jobs.append(job)
         
         # Merge output chunks
-        job = shotgun_metagenomics.merge_chunks(
-            outdir,
-            os.path.join("annotations", "trna.tsv"),
-            num_chunks,
-            "trna"
-        )
-        job.name = "merge_tRNAScan-SE"
-        job.subname = "merge"
-        jobs.append(job)
+        #job = shotgun_metagenomics.merge_chunks(
+        #    outdir,
+        #    os.path.join("annotations", "trna.tsv"),
+        #    num_chunks,
+        #    "trna"
+        #)
+        #job.name = "merge_tRNAScan-SE"
+        #job.subname = "merge"
+        #jobs.append(job)
 
         # Do rRNA prediction from co-assembly with barrnap
         prefixes = ["bac", "arc", "euk", "mito"]
@@ -1467,16 +1467,16 @@ class Metagenomics(common.MECOPipeline):
         
         return jobs 
     
-    def hmmscan_pfam(self):
+    def hmmsearch_pfam(self):
         
         """
-        Step hmmscan_pfam(): HMMSCAN of predicted genes vs PFAM-A DB.
+        Step hmmsearch_pfam(): HMMSCAN of predicted genes vs PFAM-A DB.
         """
         
         jobs = []
         
         chunks_dir = os.path.join("gene_prediction", "fasta_chunks")
-        hmmscan_out_dir = os.path.join("annotations", "hmmscan_pfam")
+        hmmsearch_out_dir = os.path.join("annotations", "hmmsearch_pfam")
         number_chunks_file = os.path.join("gene_prediction", "estimated_number_of_chunks_genes.txt")
         infiles = []
         tblouts = []
@@ -1494,44 +1494,44 @@ class Metagenomics(common.MECOPipeline):
         
         for i in range(num_chunks):
             infiles.append(os.path.join(chunks_dir, "Contigs_renamed.faa_chunk_{:07d}".format(i)))
-            tblouts.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.tblout".format(i)))
-            domtblouts.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.domtblout".format(i)))
-            pfamtblouts.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.pfamtblout".format(i)))
-            dones.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.done".format(i)))
+            tblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.tblout".format(i)))
+            domtblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.domtblout".format(i)))
+            pfamtblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.pfamtblout".format(i)))
+            dones.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.done".format(i)))
 
-        job = shotgun_metagenomics.hmmscan_array_job(
+        job = shotgun_metagenomics.hmmsearch_array_job(
             os.path.join(chunks_dir),
             "Contigs_renamed.faa_chunk_",
-            os.path.join(hmmscan_out_dir),
-            "hmmscan_chunk_",
+            os.path.join(hmmsearch_out_dir),
+            "hmmsearch_chunk_",
             infiles,
             tblouts, domtblouts, pfamtblouts,
             dones,
             config.param('pfam', 'db', required=True),
             self._curr_scheduler
         )
-        job.name = "hmmscan_pfam_array_job"
-        job.subname = "hmmscan"
+        job.name = "hmmsearch_pfam_array_job"
+        job.subname = "hmmsearch"
         job.job_array_num_task = num_chunks
         jobs.append(job)
 
         # Merge output chunks
         job = shotgun_metagenomics.merge_chunks_hmms(
-            hmmscan_out_dir,
+            hmmsearch_out_dir,
             os.path.join("annotations"),
             num_chunks,
-            "hmmscan",
-            "hmmscan_pfam"
+            "hmmsearch",
+            "hmmsearch_pfam"
         )
-        job.name = "hmmscan_pfam_merge"
+        job.name = "hmmsearch_pfam_merge"
         job.subname = "merge"      
         jobs.append(job)
        
         job = shotgun_metagenomics.parse_hmms(
-            os.path.join("annotations", "hmmscan_pfam_tblout.tsv"),
-            os.path.join("annotations", "hmmscan_pfam_tblout_parsed.tsv")
+            os.path.join("annotations", "hmmsearch_pfam_tblout.tsv"),
+            os.path.join("annotations", "hmmsearch_pfam_tblout_parsed.tsv")
         )
-        job.name = "hmmscan_pfam_parse"
+        job.name = "hmmsearch_pfam_parse"
         job.subname = "merge"      
         jobs.append(job)
         
@@ -1714,7 +1714,7 @@ class Metagenomics(common.MECOPipeline):
         return jobs
     
     #Deprecated. Still there for reference.
-    def hmmscan_rrna(self):
+    def hmmsearch_rrna(self):
         jobs = []
         
         rrna_dir = os.path.join("annotations", "rrna")
@@ -1724,8 +1724,8 @@ class Metagenomics(common.MECOPipeline):
             rrna_dir,
             config.param('rrna', 'db', 1, "filepath") 
         )
-        job.name = "hmmscan_rrna"
-        job.subname = "hmmscan_rrna"
+        job.name = "hmmsearch_rrna"
+        job.subname = "hmmsearch_rrna"
         jobs.append(job)
         
         job = shotgun_metagenomics.split_rrna(
@@ -2144,7 +2144,7 @@ class Metagenomics(common.MECOPipeline):
             os.path.join("gene_prediction", "Contigs_renamed.gff"),
             os.path.join("assembly", "Contigs.fasta"),
             os.path.join("annotations", "KOs_parsed.tsv"),
-            os.path.join("annotations", "hmmscan_pfam_tblout.tsv"),
+            os.path.join("annotations", "hmmsearch_pfam_tblout.tsv"),
             os.path.join("annotations", "rpsblast_cog.tsv"),
             os.path.join("annotations", "rpsblast_kog.tsv"),
             os.path.join("annotations", "taxonomy_consensus", "taxonomy.tsv"),
@@ -2845,7 +2845,7 @@ class Metagenomics(common.MECOPipeline):
         jobs = []
         
         chunks_dir = os.path.join("gene_prediction", "fasta_chunks")
-        hmmscan_out_dir = os.path.join("annotations", "virome")
+        hmmsearch_out_dir = os.path.join("annotations", "virome")
         number_chunks_file = os.path.join("gene_prediction", "estimated_number_of_chunks_genes.txt")
         infiles = []
         tblouts = []
@@ -2863,36 +2863,36 @@ class Metagenomics(common.MECOPipeline):
         
         for i in range(num_chunks):
             infiles.append(os.path.join(chunks_dir, "Contigs_renamed.faa_chunk_{:07d}".format(i)))
-            tblouts.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.tblout".format(i)))
-            domtblouts.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.domtblout".format(i)))
-            pfamtblouts.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.pfamtblout".format(i)))
-            dones.append(os.path.join(hmmscan_out_dir, "hmmscan_chunk_{:07d}.done".format(i)))
+            tblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.tblout".format(i)))
+            domtblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.domtblout".format(i)))
+            pfamtblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.pfamtblout".format(i)))
+            dones.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.done".format(i)))
 
-        job = shotgun_metagenomics.hmmscan_array_job(
+        job = shotgun_metagenomics.hmmsearch_array_job(
             os.path.join(chunks_dir),
             "Contigs_renamed.faa_chunk_",
-            os.path.join(hmmscan_out_dir),
-            "hmmscan_chunk_",
+            os.path.join(hmmsearch_out_dir),
+            "hmmsearch_chunk_",
             infiles,
             tblouts, domtblouts, pfamtblouts,
             dones,
             config.param('virome', 'db', required=True),
             self._curr_scheduler
         )
-        job.name = "hmmscan_pfam_virome"
+        job.name = "hmmsearch_pfam_virome"
         job.subname = "hmmscan"
         job.job_array_num_task = num_chunks
         jobs.append(job)
 
         # Merge output chunks
         job = shotgun_metagenomics.merge_chunks_hmms(
-            hmmscan_out_dir,
+            hmmsearch_out_dir,
             os.path.join("annotations"),
             num_chunks,
             "hmmscan",
             "virome/virome"
         )
-        job.name = "hmmscan_virome_merge"
+        job.name = "hmmsearch_virome_merge"
         job.subname = "merge"      
         jobs.append(job)
         
@@ -3018,7 +3018,7 @@ class Metagenomics(common.MECOPipeline):
         
         job = shotgun_metagenomics.pfam_overrep(
             os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv"),
-            os.path.join("annotations", "hmmscan_pfam_tblout_parsed.tsv"),
+            os.path.join("annotations", "hmmsearch_pfam_tblout_parsed.tsv"),
             os.path.join("annotations", "pfam_matrix_cpm.tsv")
         )
         job.name = "pfam_overrep_cpm"
@@ -3027,7 +3027,7 @@ class Metagenomics(common.MECOPipeline):
         
         job = shotgun_metagenomics.pfam_overrep(
             os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
-            os.path.join("annotations", "hmmscan_pfam_tblout_parsed.tsv"),
+            os.path.join("annotations", "hmmsearch_pfam_tblout_parsed.tsv"),
             os.path.join("annotations", "pfam_matrix.tsv")
         )
         job.name = "pfam_overrep_read_counts"
@@ -3068,7 +3068,7 @@ class Metagenomics(common.MECOPipeline):
             self.kegg_annotation,
             self.rpsblast_cog,
             self.rpsblast_kog,
-            self.hmmscan_pfam,
+            self.hmmsearch_pfam,
             self.diamond_blastp_nr,
             self.ncrna,
             self.taxonomic_annotation,
@@ -3084,7 +3084,7 @@ class Metagenomics(common.MECOPipeline):
             self.differential_abundance,
             self.blastn_nt_contigs,
             self.blastn_ncbi_genomes,
-            self.hmmscan_rrna,
+            self.hmmsearch_rrna,
             self.reads_centric_taxonomy,
             self.cleanup
         ]
