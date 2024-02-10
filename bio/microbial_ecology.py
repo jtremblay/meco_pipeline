@@ -269,6 +269,28 @@ rmEmptyCol.pl \\
 
     return job
 
+def feature_table_multiplier(infile, outfile, multiplier):
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['R', 'module_R'],
+            ['tools', 'module_tools']
+        ]
+    )
+
+    job.command="""
+featureTableMultiplier.R \\
+  -i {infile} \\
+  -o {outfile} \\
+  -n {multiplier}""".format(
+        infile = infile,
+        outfile = outfile,
+        multiplier = multiplier
+    )
+
+    return job
+
 def filter_and_sort_feature_table(infile, outfile):
     job = Job(
         [infile],

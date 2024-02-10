@@ -947,10 +947,20 @@ class AmpliconTagger(common.MECOPipeline):
         jobs = []
         
         curr_feature_table = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage.tsv")
+        curr_feature_table_x1000 = os.path.join(self._lib_type_dir, "feature_tables", "feature_table_final_percentage_x1000.tsv")
         feature_table_prefix = "feature_table_final_percentage"
         
-        job = microbial_ecology.beta_diversity(
+        job = microbial_ecology.feature_table_multiplier(
             curr_feature_table,
+            curr_feature_table_x1000,
+            1000
+        )
+        job.name = "beta_diversity_multiply_table"
+        job.subname = "beta_diversity"
+        jobs.append(job)
+
+        job = microbial_ecology.beta_diversity(
+            curr_feature_table_x1000,
             "weighted-unifrac",
             os.path.join(self._lib_type_dir, "beta_div"),
             os.path.join(self._lib_type_dir, "fasttree", "tree.fasttree"),

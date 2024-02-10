@@ -226,6 +226,37 @@ bbduk.sh \\
     ) 
     return job
 
+def subsample(infile_R1, infile_R2, outfile_R1, outfile_R2):
+
+    job = Job(
+        [infile_R1, infile_R2], 
+        [outfile_R1, outfile_R2],
+        [
+            ['bbmap', 'module_bbmap']
+        ]
+    )
+        
+    job.command="""
+reformat.sh \\
+  in={infile_R1} \\
+  in2={infile_R2} \\
+  out={outfile_R1} \\
+  out2={outfile_R2} \\
+  samplereadstarget={samplereadstarget} \\
+  sampleseed={sampleseed} \\
+  overwrite=true \\
+  threads={num_threads}""".format(
+    infile_R1 = infile_R1,
+    infile_R2 = infile_R2,
+    outfile_R1 = outfile_R1,
+    outfile_R2 = outfile_R2,
+    samplereadstarget = config.param('subsample', 'samplereadstarget', type='int', required=True),
+    sampleseed = config.param('subsample', 'sampleseed', type='int', required=True),
+    num_threads = config.param('subsample', 'num_threads', type='int', required=True)
+    )
+
+    return job
+
 def duk_gz_matched_only(infile, outfile, log, db):
                
 

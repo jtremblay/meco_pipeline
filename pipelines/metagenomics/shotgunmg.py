@@ -385,7 +385,53 @@ class Metagenomics(common.MECOPipeline):
             jobs.append(job)
             
         return jobs
+
+    def subsample(self):
+        
+        """
+        Step subsample(): Subsample prior to assembly. As discussed in https://doi.org/10.1093/bib/bbac443
+        """
+
+        jobs = []
+        sample_list = []
+        fastq_gz_list_R1 = []
+        fastq_gz_list_R2 = []
+        fastq_gz_out_list_R1 = []
+        fastq_gz_out_list_R2 = []
+        
+        subsample = config.param('DEFAULT', 'subsample_reads_prior_to_assembly', required=False, type='string') 
+        ref_genome = config.param('DB', 'ref_genome', required=False, type='string') 
      
+        if isinstance(subsample, str) and subsample == "yes":
+            for readset in self.readsets:
+                #Here we assume all libs inside readset file are either PAIRED or SINGLE, but not both.
+                if readset.run_type == "PAIRED_END":
+                    if isinstance(ref_genome, str) and ref_genome != "":
+                        sample_list.append(readset.name)
+                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"))
+                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"))
+                        fastq_gz_out_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R1.fastq.gz"))
+                        fastq_gz_out_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R2.fastq.gz"))
+                    else:
+                        sample_list.append(readset.name)
+                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"))
+                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"))
+                        fastq_gz_out_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R1.fastq.gz"))
+                        fastq_gz_out_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R2.fastq.gz"))
+          
+            for i in range(0, len(fastq_gz_list_R1)):
+                job = shotgun_metagenomics.subsample(
+                    fastq_gz_list_R1[i],
+                    fastq_gz_list_R2[i],
+                    fastq_gz_out_list_R1[i],
+                    fastq_gz_out_list_R2[i]
+                )
+                job.name = "subsample_" + sample_list[i]
+                job.subname = "subsample"
+                jobs.append(job)
+        
+        return jobs
+
     def assembly(self):
         
         """
@@ -393,6 +439,7 @@ class Metagenomics(common.MECOPipeline):
         """
         mkdir_p(os.path.join(self._root_dir, "assembly"))
         ref_genome = config.param('DB', 'ref_genome', required=False, type='string') 
+        subsample = config.param('DEFAULT', 'subsample_reads_prior_to_assembly', required=False, type='string') 
 
         root = self._root_dir
         jobs = []
@@ -415,11 +462,20 @@ class Metagenomics(common.MECOPipeline):
                     fastq_gz_list_merged.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".extendedFrags.fastq.gz"))
                 else:
                     if isinstance(ref_genome, str) and ref_genome != "":
-                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"))
-                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"))
+                        if isinstance(subsample, str) and subsample == "yes":
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R2.fastq.gz"))
+                        else:
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"))
                     else:
-                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"))
-                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"))
+                        if isinstance(subsample, str) and subsample == "yes":
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R2.fastq.gz"))
+                        else:
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"))
+
             elif readset.run_type == "SINGLE_END":
                 fastq_gz_list.append(os.path.join(root, "qced_reads", readset.sample.name, readset.name + ".ncontam.fastq.gz"))
                 reads_type = "se"
@@ -789,7 +845,7 @@ class Metagenomics(common.MECOPipeline):
                 job.subname = "flagstats"
                 jobs.append(job)
 
-            job = shotgun_metagenomics.coverage_bed(
+            job = shotgun_metagenomics.coverage_bed_v2_24(
                 bam_contigs,
                 bed_contigs,
                 cov_contigs,
@@ -799,7 +855,7 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "bedtools"
             jobs.append(job)
             
-            job = shotgun_metagenomics.coverage_bed(
+            job = shotgun_metagenomics.coverage_bed_v2_24(
                 bam_contigs,
                 bed_genes,
                 cov_genes,
@@ -3061,6 +3117,7 @@ class Metagenomics(common.MECOPipeline):
             # Core steps.
             self.trim,
             self.remove_contam,
+            self.subsample,
             self.assembly,
             self.gene_prediction,
             self.abundance,

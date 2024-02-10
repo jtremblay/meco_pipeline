@@ -68,7 +68,7 @@ class Pipeline(object):
             self._argparser.add_argument("-c", "--config", help="config INI-style file", nargs="+", type=argparse.FileType('r'), required=True)
             self._argparser.add_argument("-s", "--steps", help="step range e.g. '1-5', '3,6,7', '2,4-8'", required=True)
             self._argparser.add_argument("-o", "--output-dir", help="output directory (default: current)", default=os.getcwd())
-            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default: slurm)", choices=["slurm", "torque", "batch", "daemon", "sge"], default="slurm")
+            self._argparser.add_argument("-j", "--job-scheduler", help="job scheduler type (default:slurm)", choices=["slurm", "torque", "batch", "daemon", "sge", "slurm_apptainer", "batch_apptainer"], default="slurm")
             self._argparser.add_argument("-f", "--force", help="force creation of jobs even if up to date (default: false)", action="store_true")
             self._argparser.add_argument("-l", "--log", help="log level (default: info)", choices=["debug", "info", "warning", "error", "critical"], default="info")
             self._argparser.add_argument("-z", "--json", help="generate pipeline path in json format", default=sys.stdout, type=argparse.FileType('w'), required=False)
