@@ -1327,12 +1327,12 @@ class Metagenomics(common.MECOPipeline):
 
                 bam_contigs = os.path.join("contig_abundance", readset.sample.name, readset.name + ".bam")
             
-                job = shotgun_metagenomics.coverage_bed(
+                job = shotgun_metagenomics.coverage_bed_v2_24(
                     bam_contigs,
                     os.path.join("annotations", "rrna", "barrnap", prefix + ".bed"),
                     os.path.join("annotations", "rrna", "abundance", prefix + "_" + readset.name + ".cov"),
-                    flag,
-                    prefix
+                    flag
+                    #prefix
                 )
                 job.name = "bedtoolsCov-contigs-rrna_" + readset.sample.name + "_" + prefix
                 job.subname = "bedtools_rrna"
@@ -1463,7 +1463,7 @@ class Metagenomics(common.MECOPipeline):
         
         jobs = []
         
-        # Do rpsblast on KOG for big assembly  
+        # Do rpsblast on KOG?
         if(config.param('DEFAULT', 'skip_kog', 1, 'string') == 'yes'):
             fname = os.path.join("annotations", "rpsblast_kog.tsv")
             open(fname, 'a').close()
@@ -1522,7 +1522,90 @@ class Metagenomics(common.MECOPipeline):
             jobs.append(job)
         
         return jobs 
-    
+
+    def hmmsearch_cazy(self):
+        
+        """
+        Step hmmsearch_cazy(): HMMSCAN of predicted genes vs CAZy       
+        """
+        
+        jobs = []
+        if(config.param('DEFAULT', 'skip_cazy', 1, 'string') == 'yes'):
+            fname = os.path.join("annotations", "parsed_cazy.tsv")
+            open(fname, 'a').close()
+            os.utime(fname, None)
+        else:
+            chunks_dir = os.path.join("gene_prediction", "fasta_chunks")
+            hmmsearch_out_dir = os.path.join("annotations", "hmmsearch_cazy")
+            number_chunks_file = os.path.join("gene_prediction", "estimated_number_of_chunks_genes.txt")
+            infiles = []
+            tblouts = []
+            domtblouts = []
+            pfamtblouts = []
+            dones = []
+            
+            num_chunks = 0
+            if os.path.exists(number_chunks_file) and os.path.getsize(number_chunks_file) > 0:
+                with open(number_chunks_file, 'r') as file:
+                    num_chunks = file.read().replace('\n', '')
+                    num_chunks = int(num_chunks)
+            else:
+                raise Exception(str(number_chunks_file) + " file does not exist\nPlease run exonerate step before running array jobs (blastn, diamond-blastp, hmmscan, rpsblast etc.\n")
+            
+            for i in range(num_chunks):
+                infiles.append(os.path.join(chunks_dir, "Contigs_renamed.faa_chunk_{:07d}".format(i)))
+                tblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.tblout".format(i)))
+                domtblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.domtblout".format(i)))
+                pfamtblouts.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.pfamtblout".format(i)))
+                dones.append(os.path.join(hmmsearch_out_dir, "hmmsearch_chunk_{:07d}.done".format(i)))
+
+            job = shotgun_metagenomics.hmmsearch_array_job(
+                os.path.join(chunks_dir),
+                "Contigs_renamed.faa_chunk_",
+                os.path.join(hmmsearch_out_dir),
+                "hmmsearch_chunk_",
+                infiles,
+                tblouts, domtblouts, pfamtblouts,
+                dones,
+                config.param('cazy', 'db', required=True),
+                self._curr_scheduler
+            )
+            job.name = "hmmsearch_cazy_array_job"
+            job.subname = "hmmsearch"
+            job.job_array_num_task = num_chunks
+            jobs.append(job)
+
+            # Merge output chunks
+            job = shotgun_metagenomics.merge_chunks_hmms(
+                hmmsearch_out_dir,
+                os.path.join("annotations"),
+                num_chunks,
+                "hmmsearch",
+                "hmmsearch_cazy"
+            )
+            job.name = "hmmsearch_cazy_merge"
+            job.subname = "merge"      
+            jobs.append(job)
+           
+            job = shotgun_metagenomics.parse_hmms(
+                os.path.join("annotations", "hmmsearch_cazy_tblout.tsv"),
+                os.path.join("annotations", "hmmsearch_cazy_tblout_parsed.tsv")
+            )
+            job.name = "hmmsearch_cazy_filter"
+            job.subname = "merge"      
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.parse_cazy(
+                os.path.join("annotations", "hmmsearch_cazy_tblout_parsed.tsv"),
+                config.param('cazy', 'ref_db', 1, type="filepath"),
+                os.path.join("annotations", "cazy_parsed.tsv")
+            )
+            job.name = "hmmsearch_cazy_parse"
+            job.subname = "parse"      
+            jobs.append(job)
+        
+        return jobs
+
     def hmmsearch_pfam(self):
         
         """
@@ -2205,6 +2288,7 @@ class Metagenomics(common.MECOPipeline):
             os.path.join("annotations", "rpsblast_kog.tsv"),
             os.path.join("annotations", "taxonomy_consensus", "taxonomy.tsv"),
             os.path.join("annotations", "blastp_nr_annotated.tsv"),
+            os.path.join("annotations", "cazy_parsed.tsv"),
             # outfiles
             os.path.join("annotations", "Contigs.gff"),
             os.path.join("annotations", "Contigs.fasta"),
@@ -3126,6 +3210,7 @@ class Metagenomics(common.MECOPipeline):
             self.rpsblast_cog,
             self.rpsblast_kog,
             self.hmmsearch_pfam,
+            self.hmmsearch_cazy,
             self.diamond_blastp_nr,
             self.ncrna,
             self.taxonomic_annotation,
