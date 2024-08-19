@@ -98,7 +98,7 @@ java -XX:ParallelGCThreads={threads} -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
     
 
     # Compute statistics
-    job.command += " && \\\ngrep ^Input " + trim_log + " | perl -pe 's/^Input Read Pairs: (\\d+).*Both Surviving: (\\d+).*Forward Only Surviving: (\\d+).*$/Raw Fragments,\\1\\nFragment Surviving,\\2\\nSingle Surviving,\\3/' > " + trim_stats
+    job.command += " && \\\ngrep ^Input " + trim_log + " | perl -pe 's/^Input Read Pairs: (\\\d+).*Both Surviving: (\\\d+).*Forward Only Surviving: (\\\d+).*$/Raw Fragments,\\\\1\\\\nFragment Surviving,\\\\2\\\\nSingle Surviving,\\\\3/' > " + trim_stats
 
     return job
 
@@ -1157,46 +1157,48 @@ rm -f {outdir}/{infile_base}{prefix}.tmp""".format(
 
     return job
 
-def merge_counts(infiles, outfile_raw, outfile_cpm, type_feature, skip_norm=False):
-
-    if skip_norm is False:
-        outfiles = [outfile_raw, outfile_cpm]
-    else:
-        outfiles = [outfile_raw]
+def merge_counts(infiles, outfile_raw, type_feature):
 
     job = Job(
         infiles,
-        outfiles,
+        [outfile_raw],
         [
             ['tools', 'module_tools'],
             ['R', 'module_R']
         ]
     )
   
-    if(skip_norm is True):
-        job.command="""
+    job.command="""
 mergeAbundance.pl \\
   --type {type_feature} \\
   --infiles {infile} \\
   > {outfile_raw}""".format(
             infile = ",".join(infiles),
             outfile_raw = outfile_raw,
-            outfile_cpm = outfile_cpm,
             type_feature = type_feature
         )
-    else:
-        job.command="""
-mergeAbundance.pl \\
-  --type {type_feature} \\
-  --infiles {infile} \\
-  > {outfile_raw} && \\
+
+    return job
+
+def normalize_counts(infile_raw, outfile_cpm, skip_norm_factors="FALSE"):
+
+    job = Job(
+        [infile_raw],
+        [outfile_cpm],
+        [
+            ['tools', 'module_tools'],
+            ['R', 'module_R']
+        ]
+    )
+  
+    job.command="""
 generateCPMs.R \\
-  -i {outfile_raw} \\
-  -o {outfile_cpm}""".format(
-            infile = ",".join(infiles),
-            outfile_raw = outfile_raw,
+  -i {infile_raw} \\
+  -o {outfile_cpm} \\
+  -n {skip_norm_factors}""".format(
+            infile_raw = infile_raw,
             outfile_cpm = outfile_cpm,
-            type_feature = type_feature
+            skip_norm_factors = config.param('normalization', 'skip_norm_factors', required=True)
         )
 
     return job
@@ -1649,6 +1651,29 @@ parseKegg.pl \\
     ko = config.param('kegg', 'ko', required=True),
     genetoko = config.param('kegg', 'genetoko', required=True),
     genes_desc = config.param('kegg', 'genes_desc', required=True)
+    )
+
+    return job
+
+def parse_cazy(infile, infile_reference, outfile):
+
+    job = Job(
+        [infile, infile_reference], 
+        [outfile],
+        [
+            ['perl', 'module_perl'],
+            ['meco_tools', 'module_tools']
+        ]
+    )
+    
+    job.command="""
+parseCazy.pl \\
+  --infile {infile} \\
+  --infile_reference {infile_reference} \\
+  > {outfile}""".format(
+    outfile = outfile,
+    infile = infile,
+    infile_reference = infile_reference
     )
 
     return job
@@ -2312,7 +2337,7 @@ def edger_glm(abundance, mapping_file, outdir):
     )
     
     job.command="""
-edgerGLM.R \\
+edgerFeaturesGLM.R \\
   -i {abundance} \\
   -o {outdir} \\
   -m {mapping_file} \\
@@ -2336,11 +2361,11 @@ edgerGLM.R \\
     return job
 
 def generate_gff(infile_gff, infile_fasta, kegg, pfam, cog, kog, 
-                 taxonomy, ublast_nr, 
+                 taxonomy, ublast_nr, cazy_parsed, 
                  outfile_gff, outfile_fasta, outfile_annotations):
 
     job = Job(
-        [infile_gff, infile_fasta, kegg, pfam, cog, kog, taxonomy, ublast_nr], 
+        [infile_gff, infile_fasta, kegg, pfam, cog, kog, taxonomy, ublast_nr, cazy_parsed], 
         [outfile_gff, outfile_fasta, outfile_annotations],
         [
             ['meco_tools', 'module_tools'],
@@ -2359,6 +2384,7 @@ generateGFF.pl \\
   --kegg {kegg} \\
   --taxonomy {taxonomy} \\
   --ublast {ublast_nr} \\
+  --cazy {cazy_parsed} \\
   --outfile_gff {outfile_gff} \\
   --outfile_fasta {outfile_fasta} \\
   > {outfile_annotations}""".format(
@@ -2371,6 +2397,7 @@ generateGFF.pl \\
     kegg = kegg,
     taxonomy = taxonomy,
     ublast_nr = ublast_nr,
+    cazy_parsed = cazy_parsed,
     outfile_gff = outfile_gff,
     outfile_fasta = outfile_fasta,
     outfile_annotations = outfile_annotations
@@ -2676,10 +2703,10 @@ def checkm(dummy_infile, indir, outdir, outfile):
     )
     
     job.command="""
-bash -c 'set +u && source \$CHECKM_HOME/venv_checkm/bin/activate && set -u &&
+bash -c 'set +u && source \$CHECKM_HOME/checkm_venv/bin/activate && set -u &&
 rm -rf {outdir} && \\
 mkdir -p {outdir} && \\
-\$CHECKM_HOME/bin/checkm lineage_wf \\
+\$CHECKM_HOME/checkm_venv/bin/checkm lineage_wf \\
   -f {outfile} \\
   -x fa \\
   -t {num_threads} \\

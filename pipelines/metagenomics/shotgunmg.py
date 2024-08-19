@@ -869,21 +869,35 @@ class Metagenomics(common.MECOPipeline):
         job = shotgun_metagenomics.merge_counts(
             cov_list_contigs,
             os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
-            os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv"),
             "contigs"
         )
         job.name = "merge_contig_abundance"
         job.subname = "merge_abundance"
         jobs.append(job)
         
+        job = shotgun_metagenomics.normalize_counts(
+            os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
+            os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
+        )
+        job.name = "normalize_contig_abundance"
+        job.subname = "normalization"
+        jobs.append(job)
+        
         job = shotgun_metagenomics.merge_counts(
             cov_list_genes,
             os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
-            os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv"),
             "genes"
         )
         job.name = "merge_gene_abundance"
         job.subname = "merge_abundance"
+        jobs.append(job)
+        
+        job = shotgun_metagenomics.normalize_counts(
+            os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+            os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
+        )
+        job.name = "normalize_gene_abundance"
+        job.subname = "normalization"
         jobs.append(job)
         
         if isinstance(ref_genome, str) and ref_genome != "":
