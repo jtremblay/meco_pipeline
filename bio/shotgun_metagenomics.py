@@ -2337,7 +2337,7 @@ def edger_glm(abundance, mapping_file, outdir):
     )
     
     job.command="""
-edgerFeaturesGLM.R \\
+edgerFeaturesGLM_SMG.R \\
   -i {abundance} \\
   -o {outdir} \\
   -m {mapping_file} \\
