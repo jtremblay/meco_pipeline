@@ -116,6 +116,22 @@ class Pipeline(object):
             jobs.extend(step.jobs)
         return jobs
 
+    #PG
+    # Added by Patrick.G will force the job to depend on all the others when called by scheduler
+    # Designed for monitoring job only
+    # the step name is needed so only the monitoring only depend of jobs in its own step, not those before
+    def force_full_dependency_jobs(self, step):
+        dependency_jobs = []
+        # Old behavior where a monitoring depend of every job before it, even those outside its own step
+        #for step in self.step_range:
+        #    for step_job in step.jobs:
+        #        dependency_jobs.append(step_job)
+
+        # New behavior to force a monitoring job to depend only on jobs in its own step
+        for step_job in step.jobs:
+            dependency_jobs.append(step_job)
+        return dependency_jobs
+
     def dependency_jobs(self, current_job):
         dependency_jobs = []
         dependency_input_files = set()
@@ -182,6 +198,11 @@ class Pipeline(object):
                     job.done = os.path.join("job_output", step.name, job.name + "." + hashlib.md5(job.command.encode('utf-8')).hexdigest() + ".nrc.done")
                     job.output_dir = self.output_dir
                     job.dependency_jobs = self.dependency_jobs(job)
+                    #PG Added by Patrick.G if job is monitoring, make it dependent on all the others its own step
+                    if job.name == "monitoring":
+                        #step must be passed to function to make sure a monitoring job does not add other steps job
+                        # to its dependencies (not necessary and could overload the sbatch request)
+                        job.dependency_jobs = self.force_full_dependency_jobs(step)
                     if not self.force_jobs and job.is_up2date():
                         log.info("Job " + job.name + " up to date... skipping")
                     else:

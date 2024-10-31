@@ -33,6 +33,23 @@
 from core.config import *
 from core.job import *
 
+#PG
+# Added by Patrick.G new monitoring job which is designed to send email when all jobs are finished
+# Since it depend on every jobs in step, it will send an INVALID_DEPEND mail is something failed
+# an END mail will be sented if everything went correctly
+# The stepname argument is a placeholder if I want to proceed with command override in scheduler
+# shotgunmg.py will have to be modified to include the step name for every occurence of shotgun_metagenomics.monitoring()
+def monitoring(stepname=""):
+    job = Job(
+        [],
+        [],
+        [],
+    )
+    # Since we leveraging Slurm mail sending system, no command are needed here
+    # Anyway, is necessary, scheduler will override the command to make it send an email on run
+    job.command = """sleep 1"""
+    return job
+
 def trimmomatic(input1, input2, paired_output1, unpaired_output1, paired_output2, unpaired_output2, quality_offset, trim_log, trim_stats):
 
     job = Job(
@@ -101,6 +118,50 @@ java -XX:ParallelGCThreads={threads} -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
     job.command += " && \\\ngrep ^Input " + trim_log + " | perl -pe 's/^Input Read Pairs: (\\\d+).*Both Surviving: (\\\d+).*Forward Only Surviving: (\\\d+).*$/Raw Fragments,\\\\1\\\\nFragment Surviving,\\\\2\\\\nSingle Surviving,\\\\3/' > " + trim_stats
 
     return job
+
+
+# ADDED BY Patrick Gagne on october 28nd 2024 (improvement to first shotmg steps to obtain quality data)
+def fastqc_qa_pe(input1,input2,outdir, output_R1, output_R2):
+    threads = config.param('fastqc', 'threads', type='posint')
+    job = Job(
+        [input1,input2],
+        [output_R1,output_R2],
+        [
+            ['fastqc','module_fastqc']
+        ]
+    )
+    job.command = """
+fastqc {input1} {input2} \\
+  -t {threads} \\
+  -o {outdir}""".format(
+        threads = threads,
+        input1 = input1,
+        input2 = input2,
+        outdir = outdir
+    )
+    return job
+
+# ADDED BY Patrick Gagne on october 28nd 2024 (improvement to first shotmg steps to obtain quality data)
+def fastqc_qa_se(input1,outdir,output_f):
+    threads = config.param('fastqc', 'threads', type='posint')
+    job = Job(
+        [input1],
+        [output_f],
+        [
+            ['fastqc','module_fastqc']
+        ]
+    )
+    job.command = """
+fastqc {input1} {input2} \\
+  -t {threads} \\
+  -o {outdir}""".format(
+        threads = threads,
+        input1 = input1,
+        input2 = input2,
+        outdir = outdir
+    )
+    return job
+
 
 def trimmomatic_se(input1, output1, quality_offset, trim_log, trim_stats):
 
@@ -2337,7 +2398,7 @@ def edger_glm(abundance, mapping_file, outdir):
     )
     
     job.command="""
-edgerFeaturesGLM_SMG.R \\
+edgerFeaturesGLM.R \\
   -i {abundance} \\
   -o {outdir} \\
   -m {mapping_file} \\

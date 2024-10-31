@@ -174,6 +174,10 @@ class Job:
         if self.dependency_jobs:
             return False
 
+        #PG Necessary to make sure the monitoring job is always up to date if it has no dependencies
+        if self.name == "monitoring":
+            return True
+
         # Retrieve absolute paths for .done, input and output files to avoid redundant OS function calls
         abspath_done = self.abspath(self.done)
         abspath_input_files = [self.abspath(input_file) for input_file in self.input_files]

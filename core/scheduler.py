@@ -382,8 +382,10 @@ exit \$MECO_STATE" | \\
                     cluster_work_dir_arg   = config.param(job.name, 'cluster_work_dir_arg')   
                     cluster_output_dir_arg = config.param(job.name, 'cluster_output_dir_arg') 
                     cluster_job_name_arg   = config.param(job.name, 'cluster_job_name_arg')   
+                    monitoring_mail_choice = config.param(job.name, 'monitoring_send_mail') 
                     cluster_walltime       = config.param(job.subname, 'cluster_walltime')
                     cluster_queue          = config.param(job.subname, 'cluster_queue')
+                    cluster_qos            = config.param(job.subname, 'cluster_qos')
                     cluster_cpu            = config.param(job.subname, 'cluster_cpu')
                     cluster_pmem           = config.param(job.subname, 'cluster_pmem')
                     #cluster_job_array      = config.param(job.subname, 'cluster_job_array')
@@ -392,10 +394,31 @@ exit \$MECO_STATE" | \\
                         cluster_submit_cmd + " " + \
                         cluster_other_arg + " " + \
                         cluster_work_dir_arg + " $OUTPUT_DIR " + \
-                        cluster_output_dir_arg + " $JOB_OUTPUT " + \
-                        cluster_job_name_arg + " $JOB_NAME " + \
+                        cluster_output_dir_arg + " $JOB_OUTPUT "
+#PG                        cluster_job_name_arg + " $JOB_NAME " + \
+
+                    #PG Added by Patrick.G will add the mail sending instructions to slurm if job is monitoring and the user allows mail sending in parameter
+                    # Note that a failure will send two mail ( INVALID_JOB and JOB_CANCELLED )
+                    if job.name == "monitoring" and monitoring_mail_choice == 'true':
+                        project_name = config.param(job.name, 'project_name')
+                        cmd += \
+                                cluster_job_name_arg + " " + "$JOB_NAME" + "'_" + project_name + "__Step:" + step.name + "' " \
+                            "--kill-on-invalid-dep=yes --mail-type=INVALID_DEPEND,FAIL"
+                        # If the multiple step are generated, only send a success email for the last monitoring step
+                        # But in case of failure, INVALID_DEPEND will be sent for each monitoring job (easier to pinpoint problematic step)
+                        if step.name == pipeline.step_range[-1].name:
+                            # Using BEGIN instead of END to prevent double email in case of failure
+                            # If the job start, it means all its dependencies were satisfied.
+                            cmd += ",BEGIN "
+                        else:
+                            cmd += " "
+                    else:
+                        cmd += cluster_job_name_arg + " $JOB_NAME "
+
+                    cmd += \
                         cluster_walltime + " " + \
                         cluster_queue + " " + \
+                        cluster_qos + " " + \
                         cluster_pmem + " " + \
                         cluster_cpu + " " + \
                         cluster_job_array
@@ -533,8 +556,10 @@ chmod u+x ./apptainer_job_scripts/{job.name}.{job.id}.apptainer.sh
                     cluster_work_dir_arg   = config.param(job.name, 'cluster_work_dir_arg')
                     cluster_output_dir_arg = config.param(job.name, 'cluster_output_dir_arg')
                     cluster_job_name_arg   = config.param(job.name, 'cluster_job_name_arg')
+                    monitoring_mail_choice = config.param(job.name, 'monitoring_send_mail')
                     cluster_walltime       = config.param(job.subname, 'cluster_walltime')
                     cluster_queue          = config.param(job.subname, 'cluster_queue')
+                    cluster_qos            = config.param(job.subname, 'cluster_qos')
                     cluster_cpu            = config.param(job.subname, 'cluster_cpu')
                     cluster_pmem           = config.param(job.subname, 'cluster_pmem')
                     #cluster_job_array      = config.param(job.subname, 'cluster_job_array')
@@ -543,10 +568,30 @@ chmod u+x ./apptainer_job_scripts/{job.name}.{job.id}.apptainer.sh
                         cluster_submit_cmd + " " + \
                         cluster_other_arg + " " + \
                         cluster_work_dir_arg + " $OUTPUT_DIR " + \
-                        cluster_output_dir_arg + " $JOB_OUTPUT " + \
-                        cluster_job_name_arg + " $JOB_NAME " + \
+                        cluster_output_dir_arg + " $JOB_OUTPUT "
+#                        cluster_job_name_arg + " $JOB_NAME " + \
+                    # Added by Patrick.G will add the mail sending instructions to slurm if job is monitoring and the user allows mail sending in parameter
+                    # Note that a failure will send two mail ( INVALID_JOB and JOB_CANCELLED )
+                    if job.name == "monitoring" and monitoring_mail_choice == 'true':
+                        project_name = config.param(job.name, 'project_name')
+                        cmd += \
+                                cluster_job_name_arg + " " + "$JOB_NAME" + "'_" + project_name + "__Step:" + step.name + "' " \
+                            "--kill-on-invalid-dep=yes --mail-type=INVALID_DEPEND,FAIL"
+                        # If the multiple step are generated, only send a success email for the last monitoring step
+                        # But in case of failure, INVALID_DEPEND will be sent for each monitoring job (easier to pinpoint problematic step)
+                        if step.name == pipeline.step_range[-1].name:
+                            # Using BEGIN instead of END to prevent double email in case of failure
+                            # If the job start, it means all its dependencies were satisfied.
+                            cmd += ",BEGIN "
+                        else:
+                            cmd += " "
+                    else:
+                        cmd += cluster_job_name_arg + " $JOB_NAME "
+
+                    cmd += \
                         cluster_walltime + " " + \
                         cluster_queue + " " + \
+                        cluster_qos + " " + \
                         cluster_pmem + " " + \
                         cluster_cpu + " " + \
                         cluster_job_array
