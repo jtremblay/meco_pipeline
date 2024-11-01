@@ -1545,7 +1545,7 @@ class Metagenomics(common.MECOPipeline):
         
         jobs = []
         if(config.param('DEFAULT', 'skip_cazy', 1, 'string') == 'yes'):
-            fname = os.path.join("annotations", "parsed_cazy.tsv")
+            fname = os.path.join("annotations", "cazy_parsed.tsv")
             open(fname, 'a').close()
             os.utime(fname, None)
         else:
