@@ -236,13 +236,14 @@ bbduk.sh \\
   minkmerhits={c} \\
   ref={db} \\
   overwrite=true \\
-  threads=1""".format(
+  threads=1 {sf}""".format(
     infile = infile,
     log = log,
     ncontam = ncontam,
     contam = contam,
     k = config.param('bbduk', 'k', 'int'),
     c = config.param('bbduk', 'c', 'int'),
+    sf = config.param('bbduk','secondary_flags'),
     db = db
     ) 
     return job
@@ -273,7 +274,7 @@ bbduk.sh \\
   minkmerhits={c} \\
   ref={db} \\
   overwrite=true \\
-  threads=1""".format(
+  threads=1 {sf}""".format(
     infile_R1 = infile_R1,
     infile_R2 = infile_R2,
     ncontam_R1 = ncontam_R1,
@@ -283,6 +284,7 @@ bbduk.sh \\
     log = log,
     k = config.param('bbduk', 'k', 'int'),
     c = config.param('bbduk', 'c', 'int'),
+    sf = config.param('bbduk','secondary_flags'),
     db = db
     ) 
     return job
