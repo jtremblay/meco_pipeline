@@ -2883,7 +2883,8 @@ def bins_feature_table(summarized_bins, parsed_bins, contigs_abundance, outfile)
         [summarized_bins, parsed_bins, contigs_abundance], 
         [outfile],
         [
-            ['meco_tools', 'module_tools']
+            ['meco_tools', 'module_tools'],
+            ['R', 'module_R']
         ]
     )
     
