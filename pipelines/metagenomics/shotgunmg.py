@@ -81,8 +81,8 @@ class Metagenomics(common.MECOPipeline):
         """
         
         mkdir_p(os.path.join(self._root_dir, "qced_reads"))
-        #PG
-        mkdir_p(os.path.join(self._root_dir, "fastqc"))
+        if config.param("DEFAULT", "skip_fastqc", 1, "string") == "no":
+            mkdir_p(os.path.join(self._root_dir, "fastqc"))
         
         jobs = []
         trim_stats = []
@@ -317,21 +317,35 @@ class Metagenomics(common.MECOPipeline):
                     jobs.append(job)
 
                     logs_sub.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_log.txt"))
+                
                 #PG Fastqc on decontam (TODO : Adjust if bbmap_subtract is used)
                 if config.param("DEFAULT", "skip_fastqc", 1, "string") == "no":
                     fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
                     if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
                          os.makedirs(os.path.join("fastqc", readset.sample.name))
-                    job = shotgun_metagenomics.fastqc_qa_pe(
-                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
-                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"),
-                        fastqc_out_prefix,
-                        os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_R1_fastqc.html"),
-                        os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_R2_fastqc.html")
-                    )
-                    job.name = "fastqc_DECON_" + readset.sample.name
-                    job.subname = "fastqc"
-                    jobs.append(job)
+                    ref_genome = config.param('DB', 'ref_genome', 0, 'string')
+                    if isinstance(ref_genome, str) and ref_genome != "":
+                        job = shotgun_metagenomics.fastqc_qa_pe(
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"),
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"),
+                            fastqc_out_prefix,
+                            os.path.join("fastqc", readset.sample.name, readset.sample.name + ".ncontam_paired_R1_fastqc.html"),
+                            os.path.join("fastqc", readset.sample.name, readset.sample.name + ".ncontam_paired_R2_fastqc.html")
+                        )
+                        job.name = "fastqc_DECON_sub_" + readset.sample.name
+                        job.subname = "fastqc"
+                        jobs.append(job)
+                    else:
+                        job = shotgun_metagenomics.fastqc_qa_pe(
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"),
+                            fastqc_out_prefix,
+                            os.path.join(fastqc_out_prefix, readset.sample.name + ".ncontam_paired_R1_fastqc.html"),
+                            os.path.join(fastqc_out_prefix, readset.sample.name + ".ncontam_paired_R2_fastqc.html")
+                        )
+                        job.name = "fastqc_DECON_" + readset.sample.name
+                        job.subname = "fastqc"
+                        jobs.append(job)
             
             elif readset.run_type == "SINGLE_END":
                 if isinstance(ref_genome, str) and ref_genome != "":

@@ -385,10 +385,11 @@ exit \$MECO_STATE" | \\
                     monitoring_mail_choice = config.param(job.name, 'monitoring_send_mail') 
                     cluster_walltime       = config.param(job.subname, 'cluster_walltime')
                     cluster_queue          = config.param(job.subname, 'cluster_queue')
-                    cluster_qos            = config.param(job.subname, 'cluster_qos')
                     cluster_cpu            = config.param(job.subname, 'cluster_cpu')
                     cluster_pmem           = config.param(job.subname, 'cluster_pmem')
                     #cluster_job_array      = config.param(job.subname, 'cluster_job_array')
+                    if config.has_option('DEFAULT', 'cluster_qos'):
+                        cluster_qos = config.param(job.subname, 'cluster_qos')
 
                     cmd += \
                         cluster_submit_cmd + " " + \
@@ -414,14 +415,23 @@ exit \$MECO_STATE" | \\
                             cmd += " "
                     else:
                         cmd += cluster_job_name_arg + " $JOB_NAME "
+                    cmd += f"{cluster_walltime} {cluster_queue} {cluster_qos if config.has_option('DEFAULT', 'cluster_qos') else ''} {cluster_pmem} {cluster_cpu} {cluster_job_array}".strip()
 
-                    cmd += \
-                        cluster_walltime + " " + \
-                        cluster_queue + " " + \
-                        cluster_qos + " " + \
-                        cluster_pmem + " " + \
-                        cluster_cpu + " " + \
-                        cluster_job_array
+#                    if config.has_option('DEFAULT', 'cluster_qos'):
+#                        cmd += \
+#                            cluster_walltime + " " + \
+#                            cluster_queue + " " + \
+#                            cluster_qos + " " + \
+#                            cluster_pmem + " " + \
+#                            cluster_cpu + " " + \
+#                            cluster_job_array
+#                    else:
+#                        cmd += \
+#                            cluster_walltime + " " + \
+#                            cluster_queue + " " + \
+#                            cluster_pmem + " " + \
+#                            cluster_cpu + " " + \
+#                            cluster_job_array
                     
                     if job.dependency_jobs:
                         cmd += " " + config.param(step.name, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
