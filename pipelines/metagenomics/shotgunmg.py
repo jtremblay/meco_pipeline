@@ -81,8 +81,6 @@ class Metagenomics(common.MECOPipeline):
         """
         
         mkdir_p(os.path.join(self._root_dir, "qced_reads"))
-        if config.param("DEFAULT", "skip_fastqc", 1, "string") == "no":
-            mkdir_p(os.path.join(self._root_dir, "fastqc"))
         
         jobs = []
         trim_stats = []
@@ -94,7 +92,7 @@ class Metagenomics(common.MECOPipeline):
                 os.makedirs(os.path.join("qced_reads", readset.sample.name))
             
             if readset.run_type == "PAIRED_END":
-                
+
                 job = shotgun_metagenomics.trimmomatic(
                     readset.fastq1,
                     readset.fastq2,
@@ -111,37 +109,6 @@ class Metagenomics(common.MECOPipeline):
                 jobs.append(job) 
 
                 trim_stats.append(trim_file_prefix + "stats.csv")
-
-                #PG (Fastqc on Raw and Trimmed files)
-                if config.param("DEFAULT", "skip_fastqc", 1, "string") == "no":
-                    fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
-                    if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
-                        os.makedirs(os.path.join("fastqc", readset.sample.name))
-
-                    job = shotgun_metagenomics.fastqc_qa_pe(
-                        readset.fastq1,
-                        readset.fastq2,
-                        fastqc_out_prefix,
-                        os.path.join(fastqc_out_prefix,readset.sample.name+"_R1_fastqc.html"),
-                        os.path.join(fastqc_out_prefix,readset.sample.name+"_R2_fastqc.html")
-                    )
-                    job.name = "fastqc_RAW_" + readset.sample.name
-                    job.subname = "fastqc"
-                    jobs.append(job)
-
-                    if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
-                        os.makedirs(os.path.join("fastqc", readset.sample.name))
-
-                    job = shotgun_metagenomics.fastqc_qa_pe(
-                        trim_file_prefix + "pair1.fastq.gz",
-                        trim_file_prefix + "pair2.fastq.gz",
-                        fastqc_out_prefix,
-                        os.path.join(fastqc_out_prefix,readset.sample.name+".trim.pair1_fastqc.html"),
-                        os.path.join(fastqc_out_prefix,readset.sample.name+".trim.pair2_fastqc.html")
-                    )
-                    job.name = "fastqc_TRIM_" + readset.sample.name
-                    job.subname = "fastqc"
-                    jobs.append(job)
             
             elif readset.run_type == "SINGLE_END" :
                 if config.param("DEFAULT", "qc_methods", 1, "string") == "trimmomatic":
@@ -250,13 +217,7 @@ class Metagenomics(common.MECOPipeline):
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END or SINGLE_END_LONG)!")
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
+        
         return jobs
             
     def remove_contam(self):
@@ -307,45 +268,18 @@ class Metagenomics(common.MECOPipeline):
                     job = shotgun_metagenomics.bbmap_subtract(
                         os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
                         os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"),
-                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"),
-                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapped_R1.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapped_R2.fastq.gz"),
                         ref_genome,
-                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_log.txt")
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_log.txt")
                     )
                     job.name = "bbmap_subtract_" + readset.sample.name
                     job.subname = "bbmap_sub"
                     jobs.append(job)
 
-                    logs_sub.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_log.txt"))
-                
-                #PG Fastqc on decontam (TODO : Adjust if bbmap_subtract is used)
-                if config.param("DEFAULT", "skip_fastqc", 1, "string") == "no":
-                    fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
-                    if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
-                         os.makedirs(os.path.join("fastqc", readset.sample.name))
-                    ref_genome = config.param('DB', 'ref_genome', 0, 'string')
-                    if isinstance(ref_genome, str) and ref_genome != "":
-                        job = shotgun_metagenomics.fastqc_qa_pe(
-                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"),
-                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"),
-                            fastqc_out_prefix,
-                            os.path.join("fastqc", readset.sample.name, readset.sample.name + ".ncontam_paired_R1_fastqc.html"),
-                            os.path.join("fastqc", readset.sample.name, readset.sample.name + ".ncontam_paired_R2_fastqc.html")
-                        )
-                        job.name = "fastqc_DECON_sub_" + readset.sample.name
-                        job.subname = "fastqc"
-                        jobs.append(job)
-                    else:
-                        job = shotgun_metagenomics.fastqc_qa_pe(
-                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
-                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"),
-                            fastqc_out_prefix,
-                            os.path.join(fastqc_out_prefix, readset.sample.name + ".ncontam_paired_R1_fastqc.html"),
-                            os.path.join(fastqc_out_prefix, readset.sample.name + ".ncontam_paired_R2_fastqc.html")
-                        )
-                        job.name = "fastqc_DECON_" + readset.sample.name
-                        job.subname = "fastqc"
-                        jobs.append(job)
+                    logs_sub.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_log.txt"))
             
             elif readset.run_type == "SINGLE_END":
                 if isinstance(ref_genome, str) and ref_genome != "":
@@ -432,10 +366,10 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "merge_duk_logs"
             jobs.append(job)
            
-            job = shotgun_metagenomics.merge_duk_sub_logs_interleaved(
+            job = shotgun_metagenomics.merge_duk_unmapped_logs_interleaved(
                 logs_sub,
                 readset_ids,
-                os.path.join("qced_reads", "duk_merged_sub_logs.tsv")
+                os.path.join("qced_reads", "duk_merged_unmapped_logs.tsv")
             )
             job.name = "merge_duk_logs_sub"
             job.subname = "merge_duk_logs"
@@ -452,13 +386,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "merge_duk_logs"
             jobs.append(job)
             
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def subsample(self):
@@ -483,10 +410,10 @@ class Metagenomics(common.MECOPipeline):
                 if readset.run_type == "PAIRED_END":
                     if isinstance(ref_genome, str) and ref_genome != "":
                         sample_list.append(readset.name)
-                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"))
-                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"))
-                        fastq_gz_out_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R1.fastq.gz"))
-                        fastq_gz_out_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R2.fastq.gz"))
+                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz"))
+                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz"))
+                        fastq_gz_out_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R1.fastq.gz"))
+                        fastq_gz_out_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R2.fastq.gz"))
                     else:
                         sample_list.append(readset.name)
                         fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"))
@@ -505,13 +432,6 @@ class Metagenomics(common.MECOPipeline):
                 job.subname = "subsample"
                 jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def assembly(self):
@@ -545,11 +465,11 @@ class Metagenomics(common.MECOPipeline):
                 else:
                     if isinstance(ref_genome, str) and ref_genome != "":
                         if isinstance(subsample, str) and subsample == "yes":
-                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R1.fastq.gz"))
-                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_subsampled_R2.fastq.gz"))
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R2.fastq.gz"))
                         else:
-                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz"))
-                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz"))
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz"))
                     else:
                         if isinstance(subsample, str) and subsample == "yes":
                             fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R1.fastq.gz"))
@@ -730,13 +650,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "get_contigs_length_and_gc"
         jobs.append(job)
 
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def gene_prediction(self):
@@ -768,13 +681,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "prodigal"
         jobs.append(job)
  
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def abundance(self):
@@ -791,7 +697,7 @@ class Metagenomics(common.MECOPipeline):
         flagstats_contigs_list = []
         trimmomatic_list = []
         bbduk_list = []
-        bbduk_sub_list = []
+        bbduk_unmapped_list = []
        
         ref_genome = config.param('DB', 'ref_genome', 0, 'string')
 
@@ -845,8 +751,8 @@ class Metagenomics(common.MECOPipeline):
             trimmomatic_list.append(trimmomatic)
             bbduk = os.path.join("qced_reads", readset.sample.name, readset.name + ".duk_contam_interleaved_log.txt")
             bbduk_list.append(bbduk)
-            bbduk_sub = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_log.txt")
-            bbduk_sub_list.append(bbduk_sub)
+            bbduk_sub = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_log.txt")
+            bbduk_unmapped_list.append(bbduk_sub)
             cov_contigs = os.path.join("contig_abundance", readset.sample.name, readset.name + ".cov")
             cov_list_contigs.append(cov_contigs)
             cov_genes = os.path.join("gene_abundance", readset.sample.name, readset.name + ".cov")
@@ -863,8 +769,8 @@ class Metagenomics(common.MECOPipeline):
                 #infile = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired.fastq.gz")
                 flag = "0x2"
                 if isinstance(ref_genome, str) and ref_genome != "":
-                    out1 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R1.fastq.gz")
-                    out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_sub_R2.fastq.gz")
+                    out1 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz")
+                    out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz")
                 else:
                     out1 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz")
                     out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz")
@@ -962,6 +868,7 @@ class Metagenomics(common.MECOPipeline):
             jobs.append(job)
             
         # Once all coverage has been computed, merge all tables.
+        # Contigs
         job = shotgun_metagenomics.merge_counts(
             cov_list_contigs,
             os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
@@ -970,15 +877,24 @@ class Metagenomics(common.MECOPipeline):
         job.name = "merge_contig_abundance"
         job.subname = "merge_abundance"
         jobs.append(job)
+
+        job = shotgun_metagenomics.convert_tsv_to_hdf5(
+            os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
+            os.path.join("contig_abundance", "merged_contig_abundance.h5")
+        )
+        job.name = "convert_tsv_to_hdf5_contigs"
+        job.subname = "to_hdf5"
+        jobs.append(job)
         
         job = shotgun_metagenomics.normalize_counts(
-            os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
+            os.path.join("contig_abundance", "merged_contig_abundance.h5"),
             os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
         )
         job.name = "normalize_contig_abundance"
         job.subname = "normalization"
         jobs.append(job)
         
+        # Genes
         job = shotgun_metagenomics.merge_counts(
             cov_list_genes,
             os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
@@ -988,8 +904,16 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "merge_abundance"
         jobs.append(job)
         
-        job = shotgun_metagenomics.normalize_counts(
+        job = shotgun_metagenomics.convert_tsv_to_hdf5(
             os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+            os.path.join("gene_abundance", "merged_gene_abundance.h5")
+        )
+        job.name = "convert_tsv_to_hdf5_genes"
+        job.subname = "to_hdf5"
+        jobs.append(job)
+        
+        job = shotgun_metagenomics.normalize_counts(
+            os.path.join("gene_abundance", "merged_gene_abundance.h5"),
             os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
         )
         job.name = "normalize_gene_abundance"
@@ -1002,7 +926,7 @@ class Metagenomics(common.MECOPipeline):
                 trimmomatic_list,
                 bbduk_list,
                 os.path.join("contig_abundance", "qc_mapping_stats.tsv"),
-                bbduk_sub_list
+                bbduk_unmapped_list
             )
             job.name = "flagstats_merge"
             job.subname = "flagstats"
@@ -1028,14 +952,72 @@ class Metagenomics(common.MECOPipeline):
         job.name = "get_insert_size"
         job.subname = "get_insert_size"
         jobs.append(job)
+         
+        return jobs 
+    
+    def abundance_rnaseq_euks(self):
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
+        """
+        Step abundance_rnaseq_euks(): map qced reads on contigs + generate contigs and gene abundance matrices.
+        """
+        mkdir_p(os.path.join(self._root_dir, "gene_abundance"))
+        
+        jobs = []
+        counts = []
+       
+        # Will make index for bwa. and also bed file for computing reads spanning later.
+        reference_contigs = os.path.join("assembly", "Contigs.fasta")
 
+        for readset in self.readsets:
+            outdir_genes = os.path.join("gene_abundance", readset.sample.name)
+            if not os.path.exists(outdir_genes):
+                os.makedirs(os.path.join(outdir_genes))
+       
+            if(readset.run_type == "PAIRED_END"):
+                #infile = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired.fastq.gz")
+
+                ## map against contigs
+                job = shotgun_metagenomics.star_paired(
+                    os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
+                    os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"),
+                    config.param('star', 'ref_genome', 1, 'filepath'),
+                    config.param('star', 'ref_genome_dir', 1, 'dirpath'),
+                    outdir_genes,
+                    readset.name
+                )
+                job.name = "STAR-" + readset.sample.name
+                job.subname = "star"
+                jobs.append(job)
+                    
+                job = shotgun_metagenomics.feature_count(
+                    os.path.join("gene_abundance", readset.sample.name, readset.name + "_Aligned.sortedByCoord.out.bam"), 
+                    os.path.join("gene_abundance", readset.sample.name, readset.name + "_Aligned.sortedByCoord.out.bam.counts.txt") 
+                )
+                job.name = "feature_counts-" + readset.sample.name
+                job.subname = "feature_counts"
+                jobs.append(job)
+
+                counts.append(os.path.join("gene_abundance", readset.sample.name, readset.name + "_Aligned.sortedByCoord.out.bam.counts.txt"))
+                
+
+        job = shotgun_metagenomics.merge_counts(
+            counts,
+            os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+            "feature_counts"
+        )
+        job.name = "merge_gene_abundance_rnaseq"
+        job.subname = "merge_abundance"
+        jobs.append(job)
+        
+        job = shotgun_metagenomics.normalize_counts(
+            os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+            os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
+        )
+        job.name = "normalize_gene_abundance_rnaseq"
+        job.subname = "normalization"
+        jobs.append(job)
+        
+         
         return jobs 
      
     def exonerate(self):
@@ -1090,13 +1072,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "exonerate"
         jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs    
     
     def kegg_annotation(self):
@@ -1342,13 +1317,6 @@ class Metagenomics(common.MECOPipeline):
         else:
             raise Exception("Error: In the .ini file, please chose between one of the following two values under the [DEFAULT] section: KO_method=kofamscan OR KO_method=diamond_blastp OR KO_method=hmmsearch_kofam")
 
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs 
     
     def ncrna(self):
@@ -1489,25 +1457,6 @@ class Metagenomics(common.MECOPipeline):
             job.name = "merge_contig_abundance_" + prefix
             job.subname = "merge_gene_abundance"
             jobs.append(job)
-
-            ###
-            #job = shotgun_metagenomics.merge_counts(
-            #    cov_list_contigs,
-            #    os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
-            #    "contigs"
-            #)
-            #job.name = "merge_contig_abundance"
-            #job.subname = "merge_abundance"
-            #jobs.append(job)
-            
-            #job = shotgun_metagenomics.normalize_counts(
-            #    os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
-            #    os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
-            #)
-            #job.name = "normalize_contig_abundance"
-            #job.subname = "normalization"
-            #jobs.append(job)
-            ###
             
             # RDP classifier with rrna results.
             job = microbial_ecology.rdp_wrapper(
@@ -1535,13 +1484,6 @@ class Metagenomics(common.MECOPipeline):
             )
             job.name = "generate_feature_table_" + prefix
             job.subname = "generate_feature_table"
-            jobs.append(job)
-
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
             jobs.append(job)
 
         return jobs
@@ -1611,13 +1553,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "merge"
             jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs 
     
     def rpsblast_kog(self):
@@ -1685,13 +1620,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "merge"
             jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs 
 
     def hmmsearch_cazy(self):
@@ -1775,13 +1703,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "parse"      
             jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def hmmsearch_pfam(self):
@@ -1852,13 +1773,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "merge"      
         jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def diamond_blastp_nr(self):
@@ -1922,13 +1836,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "merge"
         jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs 
 
     
@@ -1987,13 +1894,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "blastn"
         jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
     
     def blastn_ncbi_genomes(self):
@@ -2049,13 +1949,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "blastn"
         jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
     
     #Deprecated. Still there for reference.
@@ -2212,13 +2105,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "silva_tax"
             jobs.append(job)
 
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
    
     def reads_centric_taxonomy(self):
@@ -2343,13 +2229,6 @@ class Metagenomics(common.MECOPipeline):
                             job.name = "plot_taxa_single_" + normalizations[n] + "_" + types[j]  + "_L" + str(m) + "_" + prefixes[i] + "_" + organisms2[k]
                             job.subname = "plot_taxa"
                             jobs.append(job)
-
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
 
         return jobs
     
@@ -2478,26 +2357,19 @@ class Metagenomics(common.MECOPipeline):
                                 jobs.append(job)
                 
             # Plot taxa - ALL
-            for n in range(0, len(normalizations)):
-                for j in range(0, len(types)):
-                    for k in range(0, len(organisms)):
-                        for m in range(1, config.param('summarize_taxonomy', 'taxonomyDepth', 1, 'int')):
-                            job = microbial_ecology.plot_taxa_single_with_mapping_file(
-                                os.path.join(directories[i], organisms2[k], types[j], "feature_table" + normalizations[n] + organisms[k] + "_L" + str(m) + ".tsv"),
-                                os.path.join(directories[i], organisms2[k], types[j], "plots"),
-                                "taxonomy_L" + str(m) + "_" + types[j]
-                            )
-                            job.name = "plot_taxa_single" + normalizations[n] + "_" + types[j]  + "_L" + str(m) + "_" + prefixes[i] + "_" + organisms2[k]
-                            job.subname = "plot_taxa"
-                            jobs.append(job)
-        
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
+            #for n in range(0, len(normalizations)):
+            #    for j in range(0, len(types)):
+            #        for k in range(0, len(organisms)):
+            #            for m in range(1, config.param('summarize_taxonomy', 'taxonomyDepth', 1, 'int')):
+            #                job = microbial_ecology.plot_taxa_single_with_mapping_file(
+            #                    os.path.join(directories[i], organisms2[k], types[j], "feature_table" + normalizations[n] + organisms[k] + "_L" + str(m) + ".tsv"),
+            #                    os.path.join(directories[i], organisms2[k], types[j], "plots"),
+            #                    "taxonomy_L" + str(m) + "_" + types[j]
+            #                )
+            #                job.name = "plot_taxa_single" + normalizations[n] + "_" + types[j]  + "_L" + str(m) + "_" + prefixes[i] + "_" + organisms2[k]
+            #                job.subname = "plot_taxa"
+            #                jobs.append(job)
+                    
         return jobs
 
 
@@ -2525,13 +2397,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "generate_gff"
         jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
     
     def differential_abundance(self):
@@ -2566,12 +2431,6 @@ class Metagenomics(common.MECOPipeline):
                 job.subname = "DDA"
                 jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
 
         return jobs
     
@@ -2654,13 +2513,6 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "alphadiv"
         jobs.append(job)
 
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
     
     def beta_diversity(self):
@@ -2732,13 +2584,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "pca_plot"
             jobs.append(job)
             
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
 
     def binning(self):
@@ -3000,13 +2845,6 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "pca_plot"
             jobs.append(job)
         
-        #PG Added by Patrick G. add monitoring job to step
-        if config.param("DEFAULT", "monitoring_send_mail", 1, "string") == "true":
-            job = shotgun_metagenomics.monitoring()
-            job.name = "monitoring"
-            job.subname = "monitoring"
-            jobs.append(job)
-
         return jobs
     
     def anvio(self):
@@ -3489,7 +3327,8 @@ class Metagenomics(common.MECOPipeline):
             self.blastn_ncbi_genomes,
             self.hmmsearch_rrna,
             self.reads_centric_taxonomy,
-            self.cleanup
+            self.cleanup,
+            self.abundance_rnaseq_euks
         ]
 
     def set_local_variables(self):

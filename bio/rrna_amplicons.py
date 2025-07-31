@@ -808,7 +808,7 @@ def count_report(rA_files, rA_names, analysis_type, barcodes_dist, feature_table
     
     cmd += " --analysisType " + analysis_type + " \\\n"
     cmd += " --barcodesDist " + barcodes_dist + " \\\n"
-    cmd += " --OTUtable " + feature_table + " \\\n"
+    cmd += " --Featuretable " + feature_table + " \\\n"
     cmd += " --obsTable " + obs_table + " \\\n"
     cmd += " > " + outfile
      

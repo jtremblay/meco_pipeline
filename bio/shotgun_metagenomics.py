@@ -33,23 +33,6 @@
 from core.config import *
 from core.job import *
 
-#PG
-# Added by Patrick.G new monitoring job which is designed to send email when all jobs are finished
-# Since it depend on every jobs in step, it will send an INVALID_DEPEND mail is something failed
-# an END mail will be sented if everything went correctly
-# The stepname argument is a placeholder if I want to proceed with command override in scheduler
-# shotgunmg.py will have to be modified to include the step name for every occurence of shotgun_metagenomics.monitoring()
-def monitoring(stepname=""):
-    job = Job(
-        [],
-        [],
-        [],
-    )
-    # Since we leveraging Slurm mail sending system, no command are needed here
-    # Anyway, is necessary, scheduler will override the command to make it send an email on run
-    job.command = """sleep 1"""
-    return job
-
 def trimmomatic(input1, input2, paired_output1, unpaired_output1, paired_output2, unpaired_output2, quality_offset, trim_log, trim_stats):
 
     job = Job(
@@ -118,50 +101,6 @@ java -XX:ParallelGCThreads={threads} -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
     job.command += " && \\\ngrep ^Input " + trim_log + " | perl -pe 's/^Input Read Pairs: (\\\d+).*Both Surviving: (\\\d+).*Forward Only Surviving: (\\\d+).*$/Raw Fragments,\\\\1\\\\nFragment Surviving,\\\\2\\\\nSingle Surviving,\\\\3/' > " + trim_stats
 
     return job
-
-
-# ADDED BY Patrick Gagne on october 28nd 2024 (improvement to first shotmg steps to obtain quality data)
-def fastqc_qa_pe(input1,input2,outdir, output_R1, output_R2):
-    threads = config.param('fastqc', 'threads', type='posint')
-    job = Job(
-        [input1,input2],
-        [output_R1,output_R2],
-        [
-            ['fastqc','module_fastqc']
-        ]
-    )
-    job.command = """
-fastqc {input1} {input2} \\
-  -t {threads} \\
-  -o {outdir}""".format(
-        threads = threads,
-        input1 = input1,
-        input2 = input2,
-        outdir = outdir
-    )
-    return job
-
-# ADDED BY Patrick Gagne on october 28nd 2024 (improvement to first shotmg steps to obtain quality data)
-def fastqc_qa_se(input1,outdir,output_f):
-    threads = config.param('fastqc', 'threads', type='posint')
-    job = Job(
-        [input1],
-        [output_f],
-        [
-            ['fastqc','module_fastqc']
-        ]
-    )
-    job.command = """
-fastqc {input1} {input2} \\
-  -t {threads} \\
-  -o {outdir}""".format(
-        threads = threads,
-        input1 = input1,
-        input2 = input2,
-        outdir = outdir
-    )
-    return job
-
 
 def trimmomatic_se(input1, output1, quality_offset, trim_log, trim_stats):
 
@@ -236,14 +175,13 @@ bbduk.sh \\
   minkmerhits={c} \\
   ref={db} \\
   overwrite=true \\
-  threads=1 {sf}""".format(
+  threads=1""".format(
     infile = infile,
     log = log,
     ncontam = ncontam,
     contam = contam,
     k = config.param('bbduk', 'k', 'int'),
     c = config.param('bbduk', 'c', 'int'),
-    sf = config.param('bbduk','secondary_flags'),
     db = db
     ) 
     return job
@@ -274,7 +212,7 @@ bbduk.sh \\
   minkmerhits={c} \\
   ref={db} \\
   overwrite=true \\
-  threads=1 {sf}""".format(
+  threads=1""".format(
     infile_R1 = infile_R1,
     infile_R2 = infile_R2,
     ncontam_R1 = ncontam_R1,
@@ -284,7 +222,6 @@ bbduk.sh \\
     log = log,
     k = config.param('bbduk', 'k', 'int'),
     c = config.param('bbduk', 'c', 'int'),
-    sf = config.param('bbduk','secondary_flags'),
     db = db
     ) 
     return job
@@ -396,7 +333,7 @@ mergeDukLogs.pl --logs {logs} --ids {readset_ids} > {outfile}""".format(
     
     return job
 
-def merge_duk_sub_logs_interleaved(logs, readset_ids, outfile):
+def merge_duk_unmapped_logs_interleaved(logs, readset_ids, outfile):
    
     job = Job(
         logs,
@@ -1091,7 +1028,7 @@ bwa mem -M \\
   {reference} \\
   {infile1} \\
   {infile2} \\
-  | samtools view -Sbh -F 0x100 - > {outfile}.tmp && \\
+  | samtools view -Sbh -F 0x100 -f 0x2 - > {outfile}.tmp && \\
   samtools sort -@ {num_threads} -m {mem_per_thread} {outfile}.tmp -o {outfile}.tmp.sorted.bam && \\
   mv {outfile}.tmp.sorted.bam {outfile} && \\
   rm {outfile}.tmp && \\
@@ -1173,16 +1110,25 @@ def coverage_bed_v2_24(infile, bed, outfile, flag):
         ]
     )
 
+#    job.command="""
+#samtools view -b -f {flag} {infile} | \\
+#  bedtools coverage -b stdin \\
+#  -a {bed} \\
+#  -counts -sorted \\
+#  > {outfile}""".format(
+#    infile = infile,
+#    bed = bed,
+#    outfile = outfile,
+#    flag = flag
+#    )
+    
     job.command="""
-samtools view -b -f {flag} {infile} | \\
-  bedtools coverage -b stdin \\
-  -a {bed} \\
-  -counts \\
-  > {outfile}""".format(
+bedtools multicov \
+ -bams {infile} \
+ -bed {bed} > {outfile}""".format(
     infile = infile,
     bed = bed,
-    outfile = outfile,
-    flag = flag
+    outfile = outfile
     )
 
     return job
@@ -1243,10 +1189,31 @@ mergeAbundance.pl \\
 
     return job
 
-def normalize_counts(infile_raw, outfile_cpm, skip_norm_factors="FALSE"):
+def convert_tsv_to_hdf5(infile, outfile):
 
     job = Job(
-        [infile_raw],
+        [infile],
+        [outfile],
+        [
+            ['tools', 'module_tools'],
+            ['R', 'module_R']
+        ]
+    )
+  
+    job.command="""
+convertTsvToHdf5.R \\
+  -i {infile} \\
+  -o {outfile}""".format(
+            infile = infile,
+            outfile = outfile
+        )
+
+    return job
+
+def normalize_counts(infile_h5, outfile_cpm):
+
+    job = Job(
+        [infile_h5],
         [outfile_cpm],
         [
             ['tools', 'module_tools'],
@@ -1255,13 +1222,11 @@ def normalize_counts(infile_raw, outfile_cpm, skip_norm_factors="FALSE"):
     )
   
     job.command="""
-generateCPMs.R \\
-  -i {infile_raw} \\
-  -o {outfile_cpm} \\
-  -n {skip_norm_factors}""".format(
-            infile_raw = infile_raw,
-            outfile_cpm = outfile_cpm,
-            skip_norm_factors = config.param('normalization', 'skip_norm_factors', required=True)
+generateCPMsH5.R \\
+  -i {infile_h5} \\
+  -o {outfile_cpm}""".format(
+            infile_h5 = infile_h5,
+            outfile_cpm = outfile_cpm
         )
 
     return job
@@ -2400,7 +2365,7 @@ def edger_glm(abundance, mapping_file, outdir):
     )
     
     job.command="""
-edgerFeaturesGLM.R \\
+edgerFeaturesGLM_SMG.R \\
   -i {abundance} \\
   -o {outdir} \\
   -m {mapping_file} \\
@@ -2883,8 +2848,7 @@ def bins_feature_table(summarized_bins, parsed_bins, contigs_abundance, outfile)
         [summarized_bins, parsed_bins, contigs_abundance], 
         [outfile],
         [
-            ['meco_tools', 'module_tools'],
-            ['R', 'module_R']
+            ['meco_tools', 'module_tools']
         ]
     )
     
@@ -3245,6 +3209,64 @@ getSilvaTax.pl \\
 
     return job
 
+def star_paired(infile_R1, infile_R2, infile_ref, index_dir, outdir, sample_id):
+    
+    outfile_mapped = os.path.join(outdir, sample_id + "_Aligned.sortedByCoord.out.bam")
+
+    job = Job(
+        [infile_R1, infile_R2, infile_ref, os.path.join(infile_ref)],
+        [outfile_mapped], 
+        [
+            ['star', 'module_star']
+        ]
+    )
+    
+    job.command="""
+STAR \\
+  --runThreadN {num_threads} \\
+  --genomeDir {index_dir} \\
+  --readFilesIn {infile_R1} {infile_R2} \\
+  --readFilesCommand zcat \\
+  --outSAMtype BAM SortedByCoordinate \\
+  --outFileNamePrefix {outdir}/{sample_id}_ \\
+  --quantMode GeneCounts""".format(
+      infile_R1 = infile_R1,
+      infile_R2 = infile_R2,
+      infile_ref = infile_ref,
+      #outfile_mapped = outfile_mapped,
+      outdir = outdir,
+      index_dir = index_dir,
+      sample_id = sample_id,
+      num_threads = config.param('star', 'num_threads', 1, 'posint')
+    )
+
+    return job
+
+def feature_count(infile_bam, outfile_counts):
+    
+    job = Job(
+        [infile_bam],
+        [outfile_counts], 
+        [
+            ['subread', 'module_subread']
+        ]
+    )
+    
+    job.command="""
+featureCounts \\
+  -p -B -C \\
+  -T {num_threads} \\
+  -a {gtf} \\
+  -o {outfile_counts} \\
+  {infile_bam}""".format(
+      infile_bam = infile_bam,
+      outfile_counts = outfile_counts,
+      gtf = config.param('star', 'gtf', 1, 'filepath'),
+      num_threads = config.param('feature_counts', 'num_threads', 1, 'posint')
+    )
+
+    return job
+
 def bbmap_index(infile_ref, index_dir):
     
     job = Job(
@@ -3312,7 +3334,7 @@ samtools view -Sbh -F 0x100 {outfile_mapped} > {outfile_mapped}.tmp && \\
 
     return job
 
-def bbmap_subtract(infile_R1, infile_R2, outfile_unmapped_R1, outfile_unmapped_R2, index_dir, log):
+def bbmap_subtract(infile_R1, infile_R2, outfile_unmapped_R1, outfile_unmapped_R2, outfile_mapped_R1, outfile_mapped_R2, index_dir, log):
    
     #outdir = os.path.dirname(outfile_unmapped_R1) 
 
@@ -3330,6 +3352,7 @@ bbmap.sh \\
   -Xmx{ram} \\
   in={infile_R1} in2={infile_R2} \\
   outu={outfile_unmapped_R1} outu2={outfile_unmapped_R2} \\
+  outm={outfile_mapped_R1} outm2={outfile_mapped_R2} \\
   minid={minid} \\
   sam=1.3 nhtag=t mdtag=t xmtag=t amtag=t nmtag=t xstag=us \\
   maxindel=3 bwr=0.16 bw=12 fast=t overwrite=t minhits=2 \\
@@ -3339,6 +3362,8 @@ bbmap.sh \\
       infile_R2 = infile_R2,
       outfile_unmapped_R1 = outfile_unmapped_R1,
       outfile_unmapped_R2 = outfile_unmapped_R2,
+      outfile_mapped_R1 = outfile_mapped_R1,
+      outfile_mapped_R2 = outfile_mapped_R2,
       index_dir = index_dir,
       log = log,
       num_threads = config.param('bbmap_sub', 'num_threads', 1, 'posint'),
