@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2023 Julien Tremblay
+#Copyright (C) 2025 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -81,6 +81,10 @@ class Metagenomics(common.MECOPipeline):
         """
         
         mkdir_p(os.path.join(self._root_dir, "qced_reads"))
+
+        skip_fastqc = config.param('DEFAULT', 'skip_fastqc', 0, 'string')
+        if isinstance(skip_fastqc, str) and skip_fastqc == "no":
+            mkdir_p(os.path.join(self._root_dir, "fastqc"))
         
         jobs = []
         trim_stats = []
@@ -109,6 +113,38 @@ class Metagenomics(common.MECOPipeline):
                 jobs.append(job) 
 
                 trim_stats.append(trim_file_prefix + "stats.csv")
+
+                #PG (Fastqc on Raw and Trimmed files)
+                if isinstance(skip_fastqc, str) and skip_fastqc == "no":
+                    fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
+                    if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
+                        os.makedirs(os.path.join("fastqc", readset.sample.name))
+
+                    job = shotgun_metagenomics.fastqc_qa_pe(
+                        readset.fastq1,
+                        readset.fastq2,
+                        fastqc_out_prefix,
+                        os.path.join(fastqc_out_prefix,readset.sample.name+"_R1_fastqc.html"),
+                        os.path.join(fastqc_out_prefix,readset.sample.name+"_R2_fastqc.html")
+                    )
+                    job.name = "fastqc_RAW_" + readset.sample.name
+                    job.subname = "fastqc"
+                    jobs.append(job)
+
+                    if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
+                        os.makedirs(os.path.join("fastqc", readset.sample.name))
+
+                    job = shotgun_metagenomics.fastqc_qa_pe(
+                        trim_file_prefix + "pair1.fastq.gz",
+                        trim_file_prefix + "pair2.fastq.gz",
+                        fastqc_out_prefix,
+                        os.path.join(fastqc_out_prefix,readset.sample.name+".trim.pair1_fastqc.html"),
+                        os.path.join(fastqc_out_prefix,readset.sample.name+".trim.pair2_fastqc.html")
+                    )
+                    job.name = "fastqc_TRIM_" + readset.sample.name
+                    job.subname = "fastqc"
+                    jobs.append(job)
+
             
             elif readset.run_type == "SINGLE_END" :
                 if config.param("DEFAULT", "qc_methods", 1, "string") == "trimmomatic":
@@ -217,6 +253,14 @@ class Metagenomics(common.MECOPipeline):
             else:
                 raise Exception("Error: run type \"" + readset.run_type +
                 "\" is invalid for readset \"" + readset.name + "\" (should be PAIRED_END or SINGLE_END or SINGLE_END_LONG)!")
+        
+        #PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
         
         return jobs
             
@@ -385,6 +429,14 @@ class Metagenomics(common.MECOPipeline):
             job.name = "merge_duk_logs"
             job.subname = "merge_duk_logs"
             jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
             
         return jobs
 
@@ -431,6 +483,14 @@ class Metagenomics(common.MECOPipeline):
                 job.name = "subsample_" + sample_list[i]
                 job.subname = "subsample"
                 jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
         
         return jobs
 
@@ -649,6 +709,14 @@ class Metagenomics(common.MECOPipeline):
         job.name = "get_contigs_length_and_gc"
         job.subname = "get_contigs_length_and_gc"
         jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs
 
@@ -680,6 +748,14 @@ class Metagenomics(common.MECOPipeline):
         job.name = "prodigal"
         job.subname = "prodigal"
         jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
  
         return jobs
 
@@ -1017,6 +1093,13 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "normalization"
         jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
          
         return jobs 
      
@@ -1071,6 +1154,14 @@ class Metagenomics(common.MECOPipeline):
         job.name = "exonerate_genes_fna"
         job.subname = "exonerate"
         jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
         
         return jobs    
     
@@ -1316,6 +1407,14 @@ class Metagenomics(common.MECOPipeline):
         
         else:
             raise Exception("Error: In the .ini file, please chose between one of the following two values under the [DEFAULT] section: KO_method=kofamscan OR KO_method=diamond_blastp OR KO_method=hmmsearch_kofam")
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs 
     
@@ -1485,6 +1584,14 @@ class Metagenomics(common.MECOPipeline):
             job.name = "generate_feature_table_" + prefix
             job.subname = "generate_feature_table"
             jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs
     
@@ -1553,6 +1660,14 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "merge"
             jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
+        
         return jobs 
     
     def rpsblast_kog(self):
@@ -1618,6 +1733,14 @@ class Metagenomics(common.MECOPipeline):
             )
             job.name = "merge_rpsblast_kog"
             job.subname = "merge"
+            jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
             jobs.append(job)
         
         return jobs 
@@ -1703,6 +1826,14 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "parse"      
             jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
+        
         return jobs
 
     def hmmsearch_pfam(self):
@@ -1773,6 +1904,14 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "merge"      
         jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
+        
         return jobs
 
     def diamond_blastp_nr(self):
@@ -1836,8 +1975,15 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "merge"
         jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
+        
         return jobs 
-
     
     def blastn_nt_contigs(self):
         """
@@ -1894,6 +2040,14 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "blastn"
         jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
+        
         return jobs
     
     def blastn_ncbi_genomes(self):
@@ -1948,6 +2102,14 @@ class Metagenomics(common.MECOPipeline):
         job.name = "blastn_nt_contigs_merge"
         job.subname = "blastn"
         jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
         
         return jobs
     
@@ -2104,6 +2266,14 @@ class Metagenomics(common.MECOPipeline):
             job.name = "extract_taxonomy_rrna_blastn_" + prefix
             job.subname = "silva_tax"
             jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs
    
@@ -2229,6 +2399,14 @@ class Metagenomics(common.MECOPipeline):
                             job.name = "plot_taxa_single_" + normalizations[n] + "_" + types[j]  + "_L" + str(m) + "_" + prefixes[i] + "_" + organisms2[k]
                             job.subname = "plot_taxa"
                             jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs
     
@@ -2369,6 +2547,14 @@ class Metagenomics(common.MECOPipeline):
             #                job.name = "plot_taxa_single" + normalizations[n] + "_" + types[j]  + "_L" + str(m) + "_" + prefixes[i] + "_" + organisms2[k]
             #                job.subname = "plot_taxa"
             #                jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
                     
         return jobs
 
@@ -2396,6 +2582,14 @@ class Metagenomics(common.MECOPipeline):
         job.name = "generate_gff_and_annotations_file"
         job.subname = "generate_gff"
         jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
         
         return jobs
     
@@ -2431,6 +2625,13 @@ class Metagenomics(common.MECOPipeline):
                 job.subname = "DDA"
                 jobs.append(job)
         
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs
     
@@ -2512,6 +2713,14 @@ class Metagenomics(common.MECOPipeline):
         job.name = "alpha_diversity_reca"
         job.subname = "alphadiv"
         jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
 
         return jobs
     
@@ -2582,6 +2791,14 @@ class Metagenomics(common.MECOPipeline):
             )
             job.name = "beta_diversity_3d_plot_" + prefixes[i]
             job.subname = "pca_plot"
+            jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
             jobs.append(job)
             
         return jobs
@@ -2843,6 +3060,14 @@ class Metagenomics(common.MECOPipeline):
             )
             job.name = "beta_diversity_bray_curtis_bins_3d_plot_" + binner
             job.subname = "pca_plot"
+            jobs.append(job)
+        
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
             jobs.append(job)
         
         return jobs
