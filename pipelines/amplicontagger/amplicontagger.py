@@ -90,17 +90,38 @@ class AmpliconTagger(common.MECOPipeline):
         elif(self._lib_type == "ex" or self._lib_type == "nc1nc2"):
             barcodes_output = self._root_dir + "/reads_12/fastqs/ncontam_nphix.fastq"
 
-        # split barcodes
-        job = rrna_amplicons.split_barcodes(
-          self._duk_dir + "/ncontam_nphix.fastq",
-          os.path.relpath(self._barcodes.name),
-          barcodes_output,
-          self._lib_type_dir + "/fastqs/ncontam_nphix_barcodes.txt"
-        )
-        job.name = "split_barcodes"
-        job.subname = "barcodes"
-        jobs.append(job)
-        
+        if(self._lib_type == "ex" or self._lib_type == "nc1nc2"):
+            # split barcodes
+            job = rrna_amplicons.split_barcodes(
+              self._duk_dir + "/ncontam_nphix.fastq",
+              os.path.relpath(self._barcodes.name),
+              barcodes_output,
+              self._lib_type_dir + "/fastqs/ncontam_nphix_barcodes.txt"
+            )
+            job.name = "split_barcodes"
+            job.subname = "barcodes"
+            jobs.append(job)
+
+        elif(self._lib_type == "nc1"):
+            job = rrna_amplicons.split_pairs(
+                self._duk_dir + "/ncontam_nphix.fastq",
+                self._duk_dir + "/ncontam_nphix_1.fastq",
+                self._duk_dir + "/ncontam_nphix_2.fastq"
+            )
+            job.name = "split_pairs"
+            job.subname = "split_pairs"
+            jobs.append(job)
+            
+            job = rrna_amplicons.split_barcodes(
+              self._duk_dir + "/ncontam_nphix_1.fastq",
+              os.path.relpath(self._barcodes.name),
+              barcodes_output,
+              self._lib_type_dir + "/fastqs/ncontam_nphix_barcodes.txt"
+            )
+            job.name = "split_barcodes"
+            job.subname = "barcodes"
+            jobs.append(job)
+
         # Only performs remove_unpaired and split pairs if library is ex (i.e. overlapping paired end reads).
         if(self._lib_type == "ex" or self._lib_type == "nc1nc2"):
             # remove unpaired reads.
