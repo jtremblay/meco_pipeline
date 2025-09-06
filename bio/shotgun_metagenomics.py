@@ -1261,6 +1261,7 @@ def convert_tsv_to_hdf5(infile, outfile):
     )
   
     job.command="""
+rm {outfile} && \
 convertTsvToHdf5.R \\
   -i {infile} \\
   -o {outfile}""".format(
