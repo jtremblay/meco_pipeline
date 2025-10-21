@@ -121,7 +121,7 @@ def trimmomatic(input1, input2, paired_output1, unpaired_output1, paired_output2
             sliding_window2 = 15
 
     job.command = """
-java -XX:ParallelGCThreads={threads} -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
+java -XX:ParallelGCThreads={threads} -XX:-UsePerfData -Xmx2G -jar \$TRIMMOMATIC_JAR {mode} \\
   -threads {threads} \\
   -phred{quality_offset} \\
   {input1} {input2} \\
