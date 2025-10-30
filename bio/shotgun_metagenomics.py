@@ -219,7 +219,8 @@ def bbduk(infile, contam, ncontam, log, db, infile_done=False):
         infiles, 
         [contam, ncontam, log],
         [
-            ['bbmap', 'module_bbmap']
+            ['bbmap', 'module_bbmap'],
+            ['java', 'module_java']
         ]
     )
         
@@ -254,7 +255,8 @@ def bbduk_paired(infile_R1, infile_R2,
         [infile_R1, infile_R2], 
         [contam_R1, contam_R2, ncontam_R1, ncontam_R2, log],
         [
-            ['bbmap', 'module_bbmap']
+            ['bbmap', 'module_bbmap'],
+            ['java', 'module_java']
         ]
     )
         
@@ -292,7 +294,8 @@ def subsample(infile_R1, infile_R2, outfile_R1, outfile_R2):
         [infile_R1, infile_R2], 
         [outfile_R1, outfile_R2],
         [
-            ['bbmap', 'module_bbmap']
+            ['bbmap', 'module_bbmap'],
+            ['java', 'module_java']
         ]
     )
         
@@ -1261,7 +1264,7 @@ def convert_tsv_to_hdf5(infile, outfile):
     )
   
     job.command="""
-rm {outfile} && \\
+rm -f {outfile} && \\
 convertTsvToHdf5.R \\
   -i {infile} \\
   -o {outfile}""".format(
@@ -3334,7 +3337,8 @@ def bbmap_index(infile_ref, index_dir):
         [infile_ref],
         [os.path.join(index_dir, "bbmap_index.done")], 
         [
-            ['bbmap', 'module_bbmap']
+            ['bbmap', 'module_bbmap'],
+            ['java', 'module_java']
         ]
     )
     
@@ -3363,6 +3367,7 @@ def bbmap_paired(infile_R1, infile_R2, infile_ref, outfile_mapped, index_dir):
             ['bbmap', 'module_bbmap'],
             ['samtools', 'module_samtools'],
             ['perl', 'module_perl'],
+            ['java', 'module_java'],
             ['tools', 'module_tools']
         ]
     )
@@ -3401,9 +3406,10 @@ def bbmap_subtract(infile_R1, infile_R2, outfile_unmapped_R1, outfile_unmapped_R
 
     job = Job(
         [infile_R1, infile_R2],
-        [outfile_unmapped_R1, outfile_unmapped_R2, log], 
+        [outfile_unmapped_R1, outfile_unmapped_R2, outfile_mapped_R1, outfile_mapped_R2, log], 
         [
-            ['bbmap', 'module_bbmap']
+            ['bbmap', 'module_bbmap'],
+            ['java', 'module_java']
         ]
     )
     

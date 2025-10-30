@@ -317,13 +317,13 @@ class Metagenomics(common.MECOPipeline):
                         os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapped_R1.fastq.gz"),
                         os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapped_R2.fastq.gz"),
                         ref_genome,
-                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_log.txt")
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapping_stats_log.txt")
                     )
                     job.name = "bbmap_subtract_" + readset.sample.name
                     job.subname = "bbmap_sub"
                     jobs.append(job)
 
-                    logs_sub.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_log.txt"))
+                    logs_sub.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapping_stats_log.txt"))
             
             elif readset.run_type == "SINGLE_END":
                 if isinstance(ref_genome, str) and ref_genome != "":
@@ -455,6 +455,11 @@ class Metagenomics(common.MECOPipeline):
         
         subsample = config.param('DEFAULT', 'subsample_reads_prior_to_assembly', required=False, type='string') 
         ref_genome = config.param('DB', 'ref_genome', required=False, type='string') 
+        mapped_or_unmapped = config.param('DEFAULT', 'assemble_mapped_or_unmapped', required=False, type='string')
+        if isinstance(mapped_or_unmapped, str) and mapped_or_unmapped != "":
+            prefix = mapped_or_unmapped
+        else:
+            prefix = "unmapped"
      
         if isinstance(subsample, str) and subsample == "yes":
             for readset in self.readsets:
@@ -462,10 +467,10 @@ class Metagenomics(common.MECOPipeline):
                 if readset.run_type == "PAIRED_END":
                     if isinstance(ref_genome, str) and ref_genome != "":
                         sample_list.append(readset.name)
-                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz"))
-                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz"))
-                        fastq_gz_out_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R1.fastq.gz"))
-                        fastq_gz_out_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R2.fastq.gz"))
+                        fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_R1.fastq.gz"))
+                        fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_R2.fastq.gz"))
+                        fastq_gz_out_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_subsampled_R1.fastq.gz"))
+                        fastq_gz_out_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_subsampled_R2.fastq.gz"))
                     else:
                         sample_list.append(readset.name)
                         fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"))
@@ -501,7 +506,12 @@ class Metagenomics(common.MECOPipeline):
         """
         mkdir_p(os.path.join(self._root_dir, "assembly"))
         ref_genome = config.param('DB', 'ref_genome', required=False, type='string') 
-        subsample = config.param('DEFAULT', 'subsample_reads_prior_to_assembly', required=False, type='string') 
+        subsample = config.param('DEFAULT', 'subsample_reads_prior_to_assembly', required=False, type='string')
+        mapped_or_unmapped = config.param('DEFAULT', 'assemble_mapped_or_unmapped', required=False, type='string')
+        if isinstance(mapped_or_unmapped, str) and mapped_or_unmapped != "":
+            prefix = mapped_or_unmapped
+        else:
+            prefix = "unmapped"
 
         root = self._root_dir
         jobs = []
@@ -525,12 +535,12 @@ class Metagenomics(common.MECOPipeline):
                 else:
                     if isinstance(ref_genome, str) and ref_genome != "":
                         if isinstance(subsample, str) and subsample == "yes":
-                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R1.fastq.gz"))
-                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_subsampled_R2.fastq.gz"))
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_subsampled_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_subsampled_R2.fastq.gz"))
                         else:
-                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz"))
-                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz"))
-                    else:
+                            fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_R1.fastq.gz"))
+                            fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_R2.fastq.gz"))
+                    else: # no ref genome mapping prior to assembly
                         if isinstance(subsample, str) and subsample == "yes":
                             fastq_gz_list_R1.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R1.fastq.gz"))
                             fastq_gz_list_R2.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_subsampled_R2.fastq.gz"))
@@ -773,9 +783,10 @@ class Metagenomics(common.MECOPipeline):
         flagstats_contigs_list = []
         trimmomatic_list = []
         bbduk_list = []
-        bbduk_unmapped_list = []
+        bbduk_mapped_or_unmapped_list = []
        
         ref_genome = config.param('DB', 'ref_genome', 0, 'string')
+        mapped_or_unmapped = config.param('DEFAULT', 'assemble_mapped_or_unmapped', required=False, type='string')
 
         # Will make index for bwa. and also bed file for computing reads spanning later.
         reference_contigs = os.path.join("assembly", "Contigs.fasta")
@@ -820,15 +831,22 @@ class Metagenomics(common.MECOPipeline):
         
 
         for readset in self.readsets:
+                    
+            if isinstance(mapped_or_unmapped, str) and mapped_or_unmapped != "":
+                prefix = mapped_or_unmapped
+            else:
+                prefix = "unmapped"
+
             bam_contigs = os.path.join("contig_abundance", readset.sample.name, readset.name + ".bam")
+            #flagstats_contigs = os.path.join("contig_abundance", readset.sample.name, readset.name + "_" + prefix + ".flagstats")
             flagstats_contigs = os.path.join("contig_abundance", readset.sample.name, readset.name + ".flagstats")
             flagstats_contigs_list.append(flagstats_contigs)
             trimmomatic = os.path.join("qced_reads", readset.sample.name, readset.name + ".trim.stats.csv")
             trimmomatic_list.append(trimmomatic)
             bbduk = os.path.join("qced_reads", readset.sample.name, readset.name + ".duk_contam_interleaved_log.txt")
             bbduk_list.append(bbduk)
-            bbduk_sub = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_log.txt")
-            bbduk_unmapped_list.append(bbduk_sub)
+            bbduk_sub = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapping_stats_log.txt")
+            bbduk_mapped_or_unmapped_list.append(bbduk_sub)
             cov_contigs = os.path.join("contig_abundance", readset.sample.name, readset.name + ".cov")
             cov_list_contigs.append(cov_contigs)
             cov_genes = os.path.join("gene_abundance", readset.sample.name, readset.name + ".cov")
@@ -845,8 +863,9 @@ class Metagenomics(common.MECOPipeline):
                 #infile = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired.fastq.gz")
                 flag = "0x2"
                 if isinstance(ref_genome, str) and ref_genome != "":
-                    out1 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R1.fastq.gz")
-                    out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_unmapped_R2.fastq.gz")
+
+                    out1 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_R1.fastq.gz")
+                    out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_" + prefix + "_R2.fastq.gz")
                 else:
                     out1 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz")
                     out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz")
@@ -1002,7 +1021,7 @@ class Metagenomics(common.MECOPipeline):
                 trimmomatic_list,
                 bbduk_list,
                 os.path.join("contig_abundance", "qc_mapping_stats.tsv"),
-                bbduk_unmapped_list
+                bbduk_mapped_or_unmapped_list
             )
             job.name = "flagstats_merge"
             job.subname = "flagstats"
@@ -1075,7 +1094,6 @@ class Metagenomics(common.MECOPipeline):
 
                 counts.append(os.path.join("gene_abundance", readset.sample.name, readset.name + "_Aligned.sortedByCoord.out.bam.counts.txt"))
                 
-
         job = shotgun_metagenomics.merge_counts(
             counts,
             os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
@@ -1085,11 +1103,19 @@ class Metagenomics(common.MECOPipeline):
         job.subname = "merge_abundance"
         jobs.append(job)
         
-        job = shotgun_metagenomics.normalize_counts(
+        job = shotgun_metagenomics.convert_tsv_to_hdf5(
             os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+            os.path.join("gene_abundance", "merged_gene_abundance.h5")
+        )
+        job.name = "convert_tsv_to_hdf5_contigs"
+        job.subname = "to_hdf5"
+        jobs.append(job)
+        
+        job = shotgun_metagenomics.normalize_counts(
+            os.path.join("gene_abundance", "merged_gene_abundance.h5"),
             os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
         )
-        job.name = "normalize_gene_abundance_rnaseq"
+        job.name = "normalize_gene_abundance"
         job.subname = "normalization"
         jobs.append(job)
         
@@ -1102,7 +1128,8 @@ class Metagenomics(common.MECOPipeline):
             jobs.append(job)
          
         return jobs 
-     
+    
+
     def exonerate(self):
         
         """
