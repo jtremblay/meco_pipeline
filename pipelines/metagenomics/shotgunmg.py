@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2025 Julien Tremblay
+#Copyright (C) 2026 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
