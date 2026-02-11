@@ -988,6 +988,24 @@ gffToBed.pl --infile {gff} > {bed}""".format(
 
     return job
 
+def bed_to_saf(bed, saf):
+        
+    job = Job(
+        [bed],
+        [saf],
+        [
+            ['meco_tools', 'module_tools']
+        ]
+    )
+
+    job.command="""
+awk 'BEGIN{{OFS=\\"\\\\t\\"; print \\"GeneID\\tChr\\tStart\\tEnd\\tStrand\\"}} {{print \$4, \$1, \$2+1, \$3, \\".\\"}}' {bed} > {saf}""".format(
+    bed = bed,
+    saf = saf
+    )
+
+    return job
+
 def flagstats(infile, outfile):
         
     job = Job(
@@ -1158,6 +1176,44 @@ bwa mem -M \\
     mem_per_thread = config.param('samtools', 'mem_per_thread', required=True),
     infile1 = infile1,
     reference = reference,
+    outfile = outfile
+    )
+
+    return job
+
+def coverage_samtoolsidx(infile, outfile):
+    job = Job(
+        [infile],
+        [outfile],
+        [
+            ['samtools', 'module_samtools']
+        ]
+    )
+
+    job.command = """
+samtools idxstats {infile} | awk '\$1 != "\\x2a" {{print \$1 \\"\\t0\\t\\" \$2 \\"\\t\\" \$3}}' > {outfile}""".format(
+    infile = infile,
+    outfile = outfile
+    )
+
+    return job
+
+def feature_count(infile, saf, outfile):
+    job = Job(
+        [infile, saf],
+        [outfile],
+        [
+            ['subread', 'module_subread']
+        ]
+    )
+
+    job.command="""
+featureCounts -p -T {num_threads} -a {saf} -F SAF -o {outfile}.tmp {infile} && \
+awk 'NR > 2 {{print \$2 \\"\\t\\" \$3 \\"\\t\\" \$4 \\"\\t\\" \$1 \\"\\t\\" \$7}}' {outfile}.tmp > {outfile} && \
+rm {outfile}.tmp""".format(
+    infile = infile,
+    saf = saf,
+    num_threads = config.param('feature_count', 'num_threads', 1, 'int'),
     outfile = outfile
     )
 
@@ -3306,7 +3362,7 @@ STAR \\
 
     return job
 
-def feature_count(infile_bam, outfile_counts):
+def feature_count_old(infile_bam, outfile_counts):
     
     job = Job(
         [infile_bam],

@@ -793,6 +793,7 @@ class Metagenomics(common.MECOPipeline):
         bed_contigs = os.path.join("assembly", "Contigs.bed")
         bwt_contigs = os.path.join("assembly", "Contigs.fasta.bwt")
         bed_genes = os.path.join("gene_prediction", "Contigs_genes.bed")
+        saf_genes = os.path.join("gene_prediction", "Contigs_genes.saf")
 
         job = shotgun_metagenomics.fasta_to_bed(
             reference_contigs,
@@ -808,6 +809,14 @@ class Metagenomics(common.MECOPipeline):
         )
         job.name = "gff_to_bed"
         job.subname = "gff_to_bed"
+        jobs.append(job)
+        
+        job = shotgun_metagenomics.bed_to_saf(
+            bed_genes,
+            saf_genes
+        )
+        job.name = "bed_to_saf"
+        job.subname = "bed_to_saf"
         jobs.append(job)
                     
         if config.param('DEFAULT', 'mapper', 1, "string") == "bwa":
@@ -942,24 +951,21 @@ class Metagenomics(common.MECOPipeline):
                 job.subname = "flagstats"
                 jobs.append(job)
 
-            job = shotgun_metagenomics.coverage_bed_v2_24(
+            job = shotgun_metagenomics.coverage_samtoolsidx(
                 bam_contigs,
-                bed_contigs,
-                cov_contigs,
-                flag
+                cov_contigs
             )
-            job.name = "bedtoolsCov-contigs-" + readset.sample.name
-            job.subname = "bedtools"
+            job.name = "samtools-idx-" + readset.sample.name
+            job.subname = "samtools_idx"
             jobs.append(job)
             
-            job = shotgun_metagenomics.coverage_bed_v2_24(
+            job = shotgun_metagenomics.feature_count(
                 bam_contigs,
-                bed_genes,
-                cov_genes,
-                flag
+                saf_genes,
+                cov_genes
             )
-            job.name = "bedtoolsCov-genes-" + readset.sample.name
-            job.subname = "bedtools"
+            job.name = "feature-count-" + readset.sample.name
+            job.subname = "feature_count"
             jobs.append(job)
             
         # Once all coverage has been computed, merge all tables.
@@ -3475,7 +3481,7 @@ class Metagenomics(common.MECOPipeline):
                 os.path.join("annotations", type + "_matrix_cpm.tsv")
             )
             job.name = "kegg_overrep_cpm_" + type
-            job.subname = "kegg_overrep"
+            job.subname = "overrep"
             jobs.append(job)
             
             job = shotgun_metagenomics.kegg_overrep(
@@ -3485,7 +3491,7 @@ class Metagenomics(common.MECOPipeline):
                 os.path.join("annotations", type + "_matrix.tsv")
             )
             job.name = "kegg_overrep_read_counts_" + type
-            job.subname = "kegg_overrep"
+            job.subname = "overrep"
             jobs.append(job)
             
         # COG and KOG
@@ -3495,7 +3501,7 @@ class Metagenomics(common.MECOPipeline):
             os.path.join("annotations", "cog_matrix_cpm.tsv")
         )
         job.name = "cog_overrep_cpm"
-        job.subname = "cog_overrep"
+        job.subname = "overrep"
         jobs.append(job)
         
         job = shotgun_metagenomics.cog_overrep(
@@ -3504,7 +3510,7 @@ class Metagenomics(common.MECOPipeline):
             os.path.join("annotations", "cog_matrix.tsv")
         )
         job.name = "COG_overrep_read_counts"
-        job.subname = "cog_overrep"
+        job.subname = "overrep"
         jobs.append(job)
         
         job = shotgun_metagenomics.pfam_overrep(
@@ -3513,7 +3519,7 @@ class Metagenomics(common.MECOPipeline):
             os.path.join("annotations", "pfam_matrix_cpm.tsv")
         )
         job.name = "pfam_overrep_cpm"
-        job.subname = "cog_overrep"
+        job.subname = "overrep"
         jobs.append(job)
         
         job = shotgun_metagenomics.pfam_overrep(
@@ -3522,7 +3528,7 @@ class Metagenomics(common.MECOPipeline):
             os.path.join("annotations", "pfam_matrix.tsv")
         )
         job.name = "pfam_overrep_read_counts"
-        job.subname = "cog_overrep"
+        job.subname = "overrep"
         jobs.append(job)
         
         return jobs
