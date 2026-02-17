@@ -417,22 +417,6 @@ exit \$MECO_STATE" | \\
                         cmd += cluster_job_name_arg + " $JOB_NAME "
                     cmd += f"{cluster_walltime} {cluster_queue} {cluster_qos if config.has_option('DEFAULT', 'cluster_qos') else ''} {cluster_pmem} {cluster_cpu} {cluster_job_array}".strip()
 
-#                    if config.has_option('DEFAULT', 'cluster_qos'):
-#                        cmd += \
-#                            cluster_walltime + " " + \
-#                            cluster_queue + " " + \
-#                            cluster_qos + " " + \
-#                            cluster_pmem + " " + \
-#                            cluster_cpu + " " + \
-#                            cluster_job_array
-#                    else:
-#                        cmd += \
-#                            cluster_walltime + " " + \
-#                            cluster_queue + " " + \
-#                            cluster_pmem + " " + \
-#                            cluster_cpu + " " + \
-#                            cluster_job_array
-                    
                     if job.dependency_jobs:
                         cmd += " " + config.param(step.name, 'cluster_dependency_arg') + "$JOB_DEPENDENCIES"
                     cmd += " " + config.param(step.name, 'cluster_submit_cmd_suffix')
@@ -455,6 +439,13 @@ class BatchScheduler(Scheduler):
             if step.jobs:
                 self.print_step(step)
                 for job in step.jobs:
+
+                    cmd_raw = job.command_with_modules_and_unload
+                    if 'featureCount' in cmd_raw or 'samtools idxstats' in cmd_raw:
+                        cmd_final = re.sub(r"\\(?![t])(.)", r"\1", cmd_raw)
+                    else:
+                        cmd_final = re.sub(r"\\(.)", r"\1", cmd_raw)
+
                     print("""
 {separator_line}
 # JOB: {job.name}
@@ -471,10 +462,10 @@ echo MECO_exitStatus:$MECO_STATE
 if [ $MECO_STATE -eq 0 ] ; then touch $JOB_DONE ; else return 0 ; fi""".format(
                             job=job,
                             separator_line=separator_line,
-                            #command_with_modules=re.sub(r"\\(.)", r"\1", job.command_with_modules)
-                            command_with_modules_and_unload=re.sub(r"\\(.)", r"\1", job.command_with_modules_and_unload)
+                            command_with_modules_and_unload=cmd_final
                         )
                     )
+
 
 class SlurmApptainerScheduler(Scheduler):
                         

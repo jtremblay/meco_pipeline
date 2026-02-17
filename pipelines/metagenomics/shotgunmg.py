@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2026 Julien Tremblay
+#Copyright (C) 2025 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -790,35 +790,37 @@ class Metagenomics(common.MECOPipeline):
 
         # Will make index for bwa. and also bed file for computing reads spanning later.
         reference_contigs = os.path.join("assembly", "Contigs.fasta")
+        reference_contigs_mmi = os.path.join("assembly", "Contigs.mmi")
         bed_contigs = os.path.join("assembly", "Contigs.bed")
         bwt_contigs = os.path.join("assembly", "Contigs.fasta.bwt")
         bed_genes = os.path.join("gene_prediction", "Contigs_genes.bed")
         saf_genes = os.path.join("gene_prediction", "Contigs_genes.saf")
-
-        job = shotgun_metagenomics.fasta_to_bed(
-            reference_contigs,
-            bed_contigs
-        )
-        job.name = "fasta_to_bed"
-        job.subname = "fasta_to_bed"
-        jobs.append(job)
         
-        job = shotgun_metagenomics.gff_to_bed(
-            os.path.join("gene_prediction", "Contigs_renamed.gff"),
-            bed_genes
-        )
-        job.name = "gff_to_bed"
-        job.subname = "gff_to_bed"
-        jobs.append(job)
-        
-        job = shotgun_metagenomics.bed_to_saf(
-            bed_genes,
-            saf_genes
-        )
-        job.name = "bed_to_saf"
-        job.subname = "bed_to_saf"
-        jobs.append(job)
-                    
+        if config.param('DEFAULT', 'mapper', 1, "string") != "coverm":
+            job = shotgun_metagenomics.fasta_to_bed(
+                reference_contigs,
+                bed_contigs
+            )
+            job.name = "fasta_to_bed"
+            job.subname = "fasta_to_bed"
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.gff_to_bed(
+                os.path.join("gene_prediction", "Contigs_renamed.gff"),
+                bed_genes
+            )
+            job.name = "gff_to_bed"
+            job.subname = "gff_to_bed"
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.bed_to_saf(
+                bed_genes,
+                saf_genes
+            )
+            job.name = "bed_to_saf"
+            job.subname = "bed_to_saf"
+            jobs.append(job)
+                        
         if config.param('DEFAULT', 'mapper', 1, "string") == "bwa":
             job = shotgun_metagenomics.make_index(
                 reference_contigs,
@@ -828,6 +830,15 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "make_index"
             jobs.append(job)
             
+            if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+                job = shotgun_metagenomics.make_index(
+                    reference_genes,
+                    bwt_genes
+                )
+                job.name = "make_index_genes_bwa"
+                job.subname = "make_index"
+                jobs.append(job)
+            
         elif config.param('DEFAULT', 'mapper', 1, "string") == "bbmap":
             job = shotgun_metagenomics.bbmap_index(
                 reference_contigs,
@@ -835,6 +846,25 @@ class Metagenomics(common.MECOPipeline):
                 #with hidden bbmap_index.done generated as outfile
             )
             job.name = "make_index_contigs_bbmap"
+            job.subname = "make_index"
+            jobs.append(job)
+
+        elif config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+            job = shotgun_metagenomics.minimap2_index(
+                reference_contigs,
+                os.path.join("assembly", "Contigs.mmi")
+                #with hidden bbmap_index.done generated as outfile
+            )
+            job.name = "make_index_minimap2_contigs"
+            job.subname = "make_index"
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.minimap2_index(
+                os.path.join("gene_prediction", "Contigs_renamed.fna"),
+                os.path.join("gene_prediction", "Contigs_renamed.mmi")
+                #with hidden bbmap_index.done generated as outfile
+            )
+            job.name = "make_index_minimap2_genes"
             job.subname = "make_index"
             jobs.append(job)
         
@@ -880,7 +910,28 @@ class Metagenomics(common.MECOPipeline):
                     out2 = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz")
 
                 ## map against contigs
-                if config.param('DEFAULT', 'mapper', 1, "string") == "bwa":
+                if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+                    job = shotgun_metagenomics.coverm_paired_fastq(
+                        reference_contigs_mmi,
+                        out1,
+                        out2,
+                        cov_contigs
+                    )
+                    job.name = "coverm-contigs-" + readset.sample.name
+                    job.subname = "coverm"
+                    jobs.append(job)
+                
+                    job = shotgun_metagenomics.coverm_paired_fastq(
+                        os.path.join("gene_prediction", "Contigs_renamed.mmi"),
+                        out1,
+                        out2,
+                        cov_genes
+                    )
+                    job.name = "coverm-genes-" + readset.sample.name
+                    job.subname = "coverm"
+                    jobs.append(job)
+
+                elif config.param('DEFAULT', 'mapper', 1, "string") == "bwa":
                     job = shotgun_metagenomics.bwa_mem_samtools(
                         reference_contigs,
                         bwt_contigs,
@@ -904,7 +955,7 @@ class Metagenomics(common.MECOPipeline):
                     job.subname = "bbmap"
                     jobs.append(job)
                 else:
-                    raise Exception("Error: mapper should be set to either bbmap or bwa ")
+                    raise Exception("Error: mapper should be set to either bbmap, bwa or coverm")
 
                 job = shotgun_metagenomics.flagstats(
                     bam_contigs,
@@ -919,8 +970,17 @@ class Metagenomics(common.MECOPipeline):
                 infile = os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam.fastq.gz")
                 flag = "0x0"
                 
-                if config.param("DEFAULT", "assembler", 1, "string") == "megahit":
-                
+                if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+                    job = shotgun_metagenomics.coverm_single_fastq(
+                        reference_contigs,
+                        out1,
+                        cov_contigs
+                    )
+                    job.name = "coverm-contigs-" + readset.sample.name
+                    job.subname = "coverm"
+                    jobs.append(job)
+
+                if config.param('DEFAULT', 'mapper', 1, "string") == "bwa":
                     job = shotgun_metagenomics.bwa_mem_samtools_se(
                         reference_contigs,
                         bwt_contigs,
@@ -931,131 +991,142 @@ class Metagenomics(common.MECOPipeline):
                     job.subname = "bwa"
                     jobs.append(job)
                 
-                elif config.param("DEFAULT", "assembler", 1, "string") == "miniasm" or config.param("DEFAULT", "assembler", 1, "string") == "canu":
-                    job = shotgun_metagenomics.minimap2_samtools_se(
-                        reference_contigs,
-                        #bwt_contigs,
-                        infile,
-                        bam_contigs
+                    job = shotgun_metagenomics.flagstats(
+                        bam_contigs,
+                        flagstats_contigs
                     )
-                    job.name = "bwa_mem-contigs-" + readset.sample.name
-                    job.subname = "bwa"
+                    job.name = "flagstats-" + readset.sample.name
+                    job.subname = "flagstats"
                     jobs.append(job)
                 
-                #-------------------------------------#
-                job = shotgun_metagenomics.flagstats(
+            if config.param('DEFAULT', 'mapper', 1, "string") != "coverm":
+                job = shotgun_metagenomics.coverage_samtoolsidx(
                     bam_contigs,
-                    flagstats_contigs
+                    cov_contigs
                 )
-                job.name = "flagstats-" + readset.sample.name
+                job.name = "samtools-idx-" + readset.sample.name
+                job.subname = "samtools_idx"
+                jobs.append(job)
+                
+                job = shotgun_metagenomics.feature_count(
+                    bam_contigs,
+                    saf_genes,
+                    cov_genes
+                )
+                job.name = "feature-count-" + readset.sample.name
+                job.subname = "feature_count"
+                jobs.append(job)
+     
+        if config.param('DEFAULT', 'mapper', 1, "string") != "coverm":
+            # Once all coverage has been computed, merge all tables.
+            # Contigs
+            job = shotgun_metagenomics.merge_counts(
+                cov_list_contigs,
+                os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
+                "contigs"
+            )
+            job.name = "merge_contig_abundance"
+            job.subname = "merge_abundance"
+            jobs.append(job)
+
+            job = shotgun_metagenomics.convert_tsv_to_hdf5(
+                os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
+                os.path.join("contig_abundance", "merged_contig_abundance.h5")
+            )
+            job.name = "convert_tsv_to_hdf5_contigs"
+            job.subname = "to_hdf5"
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.normalize_counts(
+                os.path.join("contig_abundance", "merged_contig_abundance.h5"),
+                os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
+            )
+            job.name = "normalize_contig_abundance"
+            job.subname = "normalization"
+            jobs.append(job)
+            
+            # Genes
+            job = shotgun_metagenomics.merge_counts(
+                cov_list_genes,
+                os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+                "genes"
+            )
+            job.name = "merge_gene_abundance"
+            job.subname = "merge_abundance"
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.convert_tsv_to_hdf5(
+                os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+                os.path.join("gene_abundance", "merged_gene_abundance.h5")
+            )
+            job.name = "convert_tsv_to_hdf5_genes"
+            job.subname = "to_hdf5"
+            jobs.append(job)
+            
+            job = shotgun_metagenomics.normalize_counts(
+                os.path.join("gene_abundance", "merged_gene_abundance.h5"),
+                os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
+            )
+            job.name = "normalize_gene_abundance"
+            job.subname = "normalization"
+            jobs.append(job)
+            
+            if isinstance(ref_genome, str) and ref_genome != "":
+                job = shotgun_metagenomics.merge_flagstats(
+                    flagstats_contigs_list,
+                    trimmomatic_list,
+                    bbduk_list,
+                    os.path.join("contig_abundance", "qc_mapping_stats.tsv"),
+                    bbduk_mapped_or_unmapped_list
+                )
+                job.name = "flagstats_merge"
+                job.subname = "flagstats"
+                jobs.append(job)
+            else:
+                job = shotgun_metagenomics.merge_flagstats(
+                    flagstats_contigs_list,
+                    trimmomatic_list,
+                    bbduk_list,
+                    os.path.join("contig_abundance", "qc_mapping_stats.tsv"),
+                    False
+                )
+                job.name = "flagstats_merge"
                 job.subname = "flagstats"
                 jobs.append(job)
 
-            job = shotgun_metagenomics.coverage_samtoolsidx(
-                bam_contigs,
-                cov_contigs
+            #Generate files for potential gam-ngs merge
+            job = shotgun_metagenomics.get_insert_size(
+                os.path.join("contig_abundance"),
+                os.path.join("contig_abundance", "lib_stats.tsv"),
+                os.path.join("contig_abundance", "qc_mapping_stats.tsv")
             )
-            job.name = "samtools-idx-" + readset.sample.name
-            job.subname = "samtools_idx"
+            job.name = "get_insert_size"
+            job.subname = "get_insert_size"
             jobs.append(job)
+        
+        elif config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
             
-            job = shotgun_metagenomics.feature_count(
-                bam_contigs,
-                saf_genes,
-                cov_genes
+            job = shotgun_metagenomics.merge_counts_coverm(
+                cov_list_contigs,
+                os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
+                os.path.join("contig_abundance", "merged_contig_abundance_tpm.tsv")
             )
-            job.name = "feature-count-" + readset.sample.name
-            job.subname = "feature_count"
-            jobs.append(job)
-            
-        # Once all coverage has been computed, merge all tables.
-        # Contigs
-        job = shotgun_metagenomics.merge_counts(
-            cov_list_contigs,
-            os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
-            "contigs"
-        )
-        job.name = "merge_contig_abundance"
-        job.subname = "merge_abundance"
-        jobs.append(job)
-
-        job = shotgun_metagenomics.convert_tsv_to_hdf5(
-            os.path.join("contig_abundance", "merged_contig_abundance.tsv"),
-            os.path.join("contig_abundance", "merged_contig_abundance.h5")
-        )
-        job.name = "convert_tsv_to_hdf5_contigs"
-        job.subname = "to_hdf5"
-        jobs.append(job)
-        
-        job = shotgun_metagenomics.normalize_counts(
-            os.path.join("contig_abundance", "merged_contig_abundance.h5"),
-            os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
-        )
-        job.name = "normalize_contig_abundance"
-        job.subname = "normalization"
-        jobs.append(job)
-        
-        # Genes
-        job = shotgun_metagenomics.merge_counts(
-            cov_list_genes,
-            os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
-            "genes"
-        )
-        job.name = "merge_gene_abundance"
-        job.subname = "merge_abundance"
-        jobs.append(job)
-        
-        job = shotgun_metagenomics.convert_tsv_to_hdf5(
-            os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
-            os.path.join("gene_abundance", "merged_gene_abundance.h5")
-        )
-        job.name = "convert_tsv_to_hdf5_genes"
-        job.subname = "to_hdf5"
-        jobs.append(job)
-        
-        job = shotgun_metagenomics.normalize_counts(
-            os.path.join("gene_abundance", "merged_gene_abundance.h5"),
-            os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
-        )
-        job.name = "normalize_gene_abundance"
-        job.subname = "normalization"
-        jobs.append(job)
-        
-        if isinstance(ref_genome, str) and ref_genome != "":
-            job = shotgun_metagenomics.merge_flagstats(
-                flagstats_contigs_list,
-                trimmomatic_list,
-                bbduk_list,
-                os.path.join("contig_abundance", "qc_mapping_stats.tsv"),
-                bbduk_mapped_or_unmapped_list
-            )
-            job.name = "flagstats_merge"
-            job.subname = "flagstats"
-            jobs.append(job)
-        else:
-            job = shotgun_metagenomics.merge_flagstats(
-                flagstats_contigs_list,
-                trimmomatic_list,
-                bbduk_list,
-                os.path.join("contig_abundance", "qc_mapping_stats.tsv"),
-                False
-            )
-            job.name = "flagstats_merge"
-            job.subname = "flagstats"
+            job.name = "merge_coverm_counts_contigs"
+            job.subname = "merge_abundance"
             jobs.append(job)
 
-        #Generate files for potential gam-ngs merge
-        job = shotgun_metagenomics.get_insert_size(
-            os.path.join("contig_abundance"),
-            os.path.join("contig_abundance", "lib_stats.tsv"),
-            os.path.join("contig_abundance", "qc_mapping_stats.tsv")
-        )
-        job.name = "get_insert_size"
-        job.subname = "get_insert_size"
-        jobs.append(job)
-         
+            job = shotgun_metagenomics.merge_counts_coverm(
+                cov_list_genes,
+                os.path.join("gene_abundance", "merged_gene_abundance.tsv"),
+                os.path.join("gene_abundance", "merged_gene_abundance_tpm.tsv")
+            )
+            job.name = "merge_coverm_counts_genes"
+            job.subname = "merge_abundance"
+            jobs.append(job)
+
         return jobs 
-    
+   
+
     def abundance_rnaseq_euks(self):
         
         """

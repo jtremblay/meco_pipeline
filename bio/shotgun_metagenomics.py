@@ -2,7 +2,7 @@
 
 #LICENSE AND COPYRIGHT
 
-#Copyright (C) 2026 Julien Tremblay
+#Copyright (C) 2025 Julien Tremblay
 
 #This license does not grant you the right to use any trademark, service
 #mark, tradename, or logo of the Copyright Holder.
@@ -928,13 +928,30 @@ convertProdigalNames.pl \\
 
     return job
 
+def minimap2_index(fasta, mmi):
+
+    job = Job(
+        [fasta],
+        [mmi],
+        [
+            ['bwa', 'module_minimap2']
+        ]
+    )
+    job.command="""
+minimap2 -x sr -t {num_threads} -d {mmi} {fasta}""".format(
+    mmi = mmi,
+    fasta = fasta,
+    num_threads = config.param('minimap2_index', 'num_threads', type='int', required=True), 
+    )
+
+    return job
+
 def make_index(fasta, bwt):
 
     job = Job(
         [fasta],
         [bwt],
         [
-            
             ['samtools', 'module_samtools'],
             ['meco_tools', 'module_tools'],
             ['bwa', 'module_bwa']
@@ -1198,6 +1215,62 @@ samtools idxstats {infile} | awk '\$1 != "\\x2a" {{print \$1 \\"\\t0\\t\\" \$2 \
 
     return job
 
+def coverm_paired_fastq(infile_fna, fastq1, fastq2, outfile, mapper="minimap2-sr"):
+    job = Job(
+        [infile_fna, fastq1, fastq2],
+        [outfile],
+        [
+            ['coverm', 'module_coverm'],
+            ['samtools', 'module_samtools'],
+            ['minimap2', 'module_minimap2']
+        ]
+    )
+
+    job.command="""
+coverm contig \
+ --reference {infile_fna} \
+ --coupled {fastq1} {fastq2} \
+ --methods count tpm \
+ --threads {num_threads} \
+ --output-file {outfile} \
+ --mapper {mapper} \
+ --minimap2-reference-is-index \
+ --proper-pairs-only \
+ --exclude-supplementary""".format(
+    infile_fna = infile_fna,
+    fastq1 = fastq1,
+    fastq2 = fastq2,
+    num_threads = config.param('coverm', 'num_threads', 1, 'int'),
+    outfile = outfile,
+    mapper = mapper
+    )
+
+    return job
+
+def coverm_single_fastq(infile_fna, fastq1, outfile):
+    job = Job(
+        [infile_fna, fastq1],
+        [outfile],
+        [
+            ['coverm', 'module_coverm']
+        ]
+    )
+
+    job.command="""
+coverm contig \
+  --reference {infile_fna} \
+  --single {fastq1} \
+  --methods count tpm \
+  --threads {num_threads} \
+  --output-file {outfile}""".format(
+    infile_fna = infile_fna,
+    fastq1 = fastq1,
+    num_threads = config.param('coverm', 'num_threads', 1, 'int'),
+    outfile = outfile
+    )
+
+    return job
+
 def feature_count(infile, saf, outfile):
     job = Job(
         [infile, saf],
@@ -1208,7 +1281,7 @@ def feature_count(infile, saf, outfile):
     )
 
     job.command="""
-featureCounts -p -T {num_threads} -a {saf} -F SAF -o {outfile}.tmp {infile} && \
+featureCounts -O -M -p -T {num_threads} -a {saf} -F SAF -o {outfile}.tmp {infile} && \
 awk 'NR > 2 {{print \$2 \\"\\t\\" \$3 \\"\\t\\" \$4 \\"\\t\\" \$1 \\"\\t\\" \$7}}' {outfile}.tmp > {outfile} && \
 rm {outfile}.tmp""".format(
     infile = infile,
@@ -1292,7 +1365,7 @@ def merge_counts(infiles, outfile_raw, type_feature):
         [outfile_raw],
         [
             ['tools', 'module_tools'],
-            ['R', 'module_R']
+            ['perl', 'module_perl']
         ]
     )
   
@@ -1304,6 +1377,29 @@ mergeAbundance.pl \\
             infile = ",".join(infiles),
             outfile_raw = outfile_raw,
             type_feature = type_feature
+        )
+
+    return job
+
+def merge_counts_coverm(infiles, outfile_raw, outfile_tpm):
+
+    job = Job(
+        infiles,
+        [outfile_raw, outfile_tpm],
+        [
+            ['tools', 'module_tools'],
+            ['perl', 'module_perl']
+        ]
+    )
+  
+    job.command="""
+mergeAbundanceCoverM.pl \\
+  --infiles {infile} \\
+  --outfile_tpm {outfile_tpm} \\
+  > {outfile_raw}""".format(
+            infile = ",".join(infiles),
+            outfile_raw = outfile_raw,
+            outfile_tpm = outfile_tpm
         )
 
     return job
