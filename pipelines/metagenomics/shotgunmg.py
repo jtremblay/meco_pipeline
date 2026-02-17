@@ -957,13 +957,14 @@ class Metagenomics(common.MECOPipeline):
                 else:
                     raise Exception("Error: mapper should be set to either bbmap, bwa or coverm")
 
-                job = shotgun_metagenomics.flagstats(
-                    bam_contigs,
-                    flagstats_contigs
-                )
-                job.name = "flagstats-" + readset.sample.name
-                job.subname = "flagstats"
-                jobs.append(job)
+                if config.param('DEFAULT', 'mapper', 1, "string") != "coverm":
+                    job = shotgun_metagenomics.flagstats(
+                        bam_contigs,
+                        flagstats_contigs
+                    )
+                    job.name = "flagstats-" + readset.sample.name
+                    job.subname = "flagstats"
+                    jobs.append(job)
                 
             elif(readset.run_type == "SINGLE_END"):
 
@@ -1653,9 +1654,7 @@ class Metagenomics(common.MECOPipeline):
             job = shotgun_metagenomics.merge_counts(
                 cov_list,
                 os.path.join("annotations", "rrna", "abundance", prefix + "_merged_abundance.tsv"),
-                #os.path.join("annotations", "rrna", "abundance", prefix + "_merged_abundance_cpm.tsv"),
                 "contigs"
-                #True
             )
             job.name = "merge_contig_abundance_" + prefix
             job.subname = "merge_gene_abundance"
@@ -2287,7 +2286,7 @@ class Metagenomics(common.MECOPipeline):
                 job.subname = "bedtools_rrna"
                 jobs.append(job)
                 cov_list.append(os.path.join("annotations", "rrna", "abundance", prefix + "_" + readset.name + ".cov"))
-        
+       
             job = shotgun_metagenomics.merge_counts(
                 cov_list,
                 os.path.join("annotations", "rrna", prefix + "_merged_abundance.tsv"),
@@ -2573,9 +2572,15 @@ class Metagenomics(common.MECOPipeline):
         directories = [
             os.path.join("annotations", "taxonomy_consensus")
         ]
-        abundances = [
-            os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv") 
-        ] 
+            
+        if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+            abundances = [
+                os.path.join("contig_abundance", "merged_contig_abundance_tpm.tsv") 
+            ]
+        else:
+            abundances = [
+                os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv") 
+            ]
   
         # Then proces all otu tables including the extended ones if -e option
         for i in range(0, len(infiles)):
@@ -2859,8 +2864,12 @@ class Metagenomics(common.MECOPipeline):
         # define files.
         #feature_table_consensus_tsv     = os.path.join("annotations", "taxonomy_consensus", "feature_table_normalized.tsv")
         feature_table_consensus_ba_tsv  = os.path.join("annotations", "taxonomy_consensus", "feature_table_normalized_bacteriaArchaea.tsv")
-        contig_abundance = os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
-        gene_abundance = os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
+        if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+            contig_abundance = os.path.join("contig_abundance", "merged_contig_abundance_tpm.tsv")
+            gene_abundance = os.path.join("gene_abundance", "merged_gene_abundance_tpm.tsv")
+        else:
+            contig_abundance = os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
+            gene_abundance = os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
 
         types_tsv = [feature_table_consensus_ba_tsv, contig_abundance, gene_abundance]
         prefixes = ["bray_curtis_contig_bacteriaArchaea", "bray_curtis_contig_abundance", "bray_curtis_gene_abundance"]
@@ -3025,10 +3034,15 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "generate_link"
             jobs.append(job)
             
+            if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+                cpm_tpm_file = os.path.join("contig_abundance", "merged_contig_abundance_tpm.tsv")
+            else:
+                cpm_tpm_file = os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv")
+
             job = shotgun_metagenomics.bins_feature_table(
                 os.path.join("binning", binner, "summarized_bins.tsv"),
                 os.path.join("binning", binner, "raw_bins.tsv"),
-                os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv"),
+                cpm_tpm_file,
                 os.path.join("annotations", binner, "bins", "feature_table_normalized.tsv")
             )
             job.name = "raw_bins_feature_table_normalized_" + binner
@@ -3073,7 +3087,7 @@ class Metagenomics(common.MECOPipeline):
             job = shotgun_metagenomics.bins_feature_table(
                 os.path.join("binning", binner, "parsed_bins", "summarized_bins.tsv"),
                 os.path.join("binning", binner, "parsed_bins.tsv"),
-                os.path.join("contig_abundance", "merged_contig_abundance_cpm.tsv"),
+                cpm_tpm_file,
                 os.path.join("annotations", binner, "parsed_bins", "feature_table_normalized.tsv")
             )
             job.name = "bins_feature_table_normalized_" + binner
@@ -3542,11 +3556,16 @@ class Metagenomics(common.MECOPipeline):
     def overrepresentation(self):
         jobs = []
         
+        if config.param('DEFAULT', 'mapper', 1, "string") == "coverm":
+            cpm_tpm_file = os.path.join("gene_abundance", "merged_gene_abundance_tpm.tsv")
+        else:
+            cpm_tpm_file = os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv")
+        
         #types = ["pathways", "modules", "KO"]
         types = ["KO"]
         for type in types:
             job = shotgun_metagenomics.kegg_overrep(
-                os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv"),
+                cpm_tpm_file,
                 os.path.join("annotations", "KOs_parsed.tsv"),
                 type,
                 os.path.join("annotations", type + "_matrix_cpm.tsv")
@@ -3567,7 +3586,7 @@ class Metagenomics(common.MECOPipeline):
             
         # COG and KOG
         job = shotgun_metagenomics.cog_overrep(
-            os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv"),
+            cpm_tpm_file,
             os.path.join("annotations", "rpsblast_cog.tsv"),
             os.path.join("annotations", "cog_matrix_cpm.tsv")
         )
@@ -3585,7 +3604,7 @@ class Metagenomics(common.MECOPipeline):
         jobs.append(job)
         
         job = shotgun_metagenomics.pfam_overrep(
-            os.path.join("gene_abundance", "merged_gene_abundance_cpm.tsv"),
+            cpm_tpm_file,
             os.path.join("annotations", "hmmsearch_pfam_tblout_parsed.tsv"),
             os.path.join("annotations", "pfam_matrix_cpm.tsv")
         )
