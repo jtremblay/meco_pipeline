@@ -324,6 +324,21 @@ class Metagenomics(common.MECOPipeline):
                     jobs.append(job)
 
                     logs_sub.append(os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapping_stats_log.txt"))
+                #PG Fastqc on decontam (TODO : Adjust if bbmap_subtract is used)
+                if config.param("DEFAULT", "skip_fastqc", 1, "string") == "no":
+                    fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
+                    if not os.path.exists(os.path.join("fastqc", readset.sample.name)):
+                         os.makedirs(os.path.join("fastqc", readset.sample.name))
+                    job = shotgun_metagenomics.fastqc_qa_pe(
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R2.fastq.gz"),
+                        fastqc_out_prefix,
+                        os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_R1_fastqc.html"),
+                        os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_R2_fastqc.html")
+                    )
+                    job.name = "fastqc_DECON_" + readset.sample.name
+                    job.subname = "fastqc"
+                    jobs.append(job)
             
             elif readset.run_type == "SINGLE_END":
                 if isinstance(ref_genome, str) and ref_genome != "":
