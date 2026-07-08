@@ -288,6 +288,105 @@ bbduk.sh \\
     ) 
     return job
 
+# ADDED BY Patrick Gagne on july 8nd 2026 - Polyfilter for Poly-G tails removal + Low Entropy Filtering (SINGLE-END NOT IMPLEMENTED IN SHOTGUNMG)
+def polyfilter_se(infile, polyfilterFail, polyfilter, infile_done=False):
+
+    if(infile_done == False):
+        infiles = [infile]
+    else:
+        infiles = [infile, infile_done]
+
+    job = Job(
+        infiles,
+        [polyfilterFail, polyfilter],
+        [
+            ['bbtools', 'module_bbtools'],
+            ['java', 'module_java']
+        ]
+    )
+
+    job.command="""
+polyfilter.sh \\
+  in={infile} \\
+  out={polyfilter} \\
+  outm={polyfilterFail} \\
+  trim={trim} \\
+  polymers={polymers} \\
+  purity={purity} \\
+  ldf=1.1 \\
+  entropy={entropy} \\
+  entropy2={entropy2} \\
+  minlen={minlen} \\
+  hashes={hashes} \\
+  bits={bits} \\
+  seed=0 \\
+  cells={cells}""".format(
+    infile = infile,
+    polyfilter = polyfilter,
+    polyfilterFail = polyfilterFail,
+    trim = config.param('polyfilter', 'trim', 'int'),
+    polymers = config.param('polyfilter', 'polymers'),
+    purity = config.param('polyfilter', 'purity','float'),
+    entropy = config.param('polyfilter', 'entropy','float'),
+    entropy2 = config.param('polyfilter', 'entropy2','float'),
+    minlen = config.param('trim', 'min_length','int'),
+    hashes = config.param('polyfilter', 'hashes','int'),
+    bits = config.param('polyfilter', 'bits','int'),
+    cells = config.param('polyfilter', 'cells')
+    )
+    return job
+
+# ADDED BY Patrick Gagne on july 8nd 2026 - Polyfilter for Poly-G tails removal + Low Entropy Filtering
+def polyfilter_paired(infile_R1, infile_R2,
+                 polyfilterFail_R1, polyfilterFail_R2,
+                 polyfilter_R1, polyfilter_R2):
+
+    job = Job(
+        [infile_R1, infile_R2],
+        [polyfilterFail_R1, polyfilterFail_R2, polyfilter_R1, polyfilterFail_R2],
+        [
+            ['bbtools', 'module_bbtools'],
+            ['java', 'module_java']
+        ]
+    )
+
+    job.command="""
+polyfilter.sh \\
+  in={infile_R1} \\
+  in2={infile_R2} \\
+  out={polyfilter_R1} \\
+  out2={polyfilter_R2} \\
+  outb={polyfilterFail_R1} \\
+  outb2={polyfilterFail_R2} \\
+  trim={trim} \\
+  polymers={polymers} \\
+  purity={purity} \\
+  ldf=1.1 \\
+  entropy={entropy} \\
+  entropy2={entropy2} \\
+  minlen={minlen} \\
+  hashes={hashes} \\
+  bits={bits} \\
+  seed=0 \\
+  cells={cells}""".format(
+    infile_R1 = infile_R1,
+    infile_R2 = infile_R2,
+    polyfilter_R1 = polyfilter_R1,
+    polyfilter_R2 = polyfilter_R2,
+    polyfilterFail_R1 = polyfilterFail_R1,
+    polyfilterFail_R2 = polyfilterFail_R2,
+    trim = config.param('polyfilter', 'trim', 'int'),
+    polymers = config.param('polyfilter', 'polymers'),
+    purity = config.param('polyfilter', 'purity','float'),
+    entropy = config.param('polyfilter', 'entropy','float'),
+    entropy2 = config.param('polyfilter', 'entropy2','float'),
+    minlen = config.param('trim', 'min_length','int'),
+    hashes = config.param('polyfilter', 'hashes','int'),
+    bits = config.param('polyfilter', 'bits','int'),
+    cells = config.param('polyfilter', 'cells')
+    )
+    return job
+
 def subsample(infile_R1, infile_R2, outfile_R1, outfile_R2):
 
     job = Job(

@@ -287,10 +287,30 @@ class Metagenomics(common.MECOPipeline):
             
             if readset.run_type == "PAIRED_END":
                 log = os.path.join("qced_reads", readset.sample.name, readset.name + ".duk_contam_interleaved_log.txt")
+                # PG Added Polyfilter support (Poly-G tails removal + Entropy filtering)
+                if config.param("DEFAULT", "skip_polyfilter", 1, "string") == "yes":
+                    bbduk_pair1_input=os.path.join("qced_reads", readset.sample.name, readset.name + ".trim." + "pair1.fastq.gz")
+                    bbduk_pair2_input=os.path.join("qced_reads", readset.sample.name, readset.name + ".trim." + "pair2.fastq.gz")
+                if config.param("DEFAULT", "skip_polyfilter", 1, "string") == "no":
+                    bbduk_pair1_input=os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R1" + ".fastq.gz")
+                    bbduk_pair2_input=os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R2" + ".fastq.gz")
+                    job = shotgun_metagenomics.polyfilter_paired(
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".trim." + "pair1.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".trim." + "pair2.fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + "." + "PolyfilterFAIL_R1.fastq"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + "." + "PolyfilterFAIL_R2.fastq"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R1" + ".fastq.gz"),
+                        os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R2" + ".fastq.gz")
+                    )
+                    job.name = "polyfilter_paired_" + readset.sample.name
+                    job.subname = "polyf"
+                    jobs.append(job)
+
+
 
                 job = shotgun_metagenomics.bbduk_paired(
-                    os.path.join("qced_reads", readset.sample.name, readset.name + ".trim." + "pair1.fastq.gz"),
-                    os.path.join("qced_reads", readset.sample.name, readset.name + ".trim." + "pair2.fastq.gz"),
+                    bbduk_pair1_input,
+                    bbduk_pair2_input,
                     os.path.join("qced_reads", readset.sample.name, readset.name + "." + "contam_R1.fastq"),
                     os.path.join("qced_reads", readset.sample.name, readset.name + "." + "contam_R2.fastq"),
                     os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_R1.fastq.gz"),
@@ -339,10 +359,39 @@ class Metagenomics(common.MECOPipeline):
                     job.name = "fastqc_DECON_" + readset.sample.name
                     job.subname = "fastqc"
                     jobs.append(job)
+
+                    if isinstance(ref_genome, str) and ref_genome != "":
+                        fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
+                        job = shotgun_metagenomics.fastqc_qa_pe(
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapped_R1.fastq.gz"),
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".ncontam_paired_mapped_R2.fastq.gz"),
+                            fastqc_out_prefix,
+                            os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_mapped_R1_fastqc.html"),
+                            os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_mapped_R2_fastqc.html")
+                            )
+                        job.name = "fastqc_BSUB_" + readset.sample.name
+                        job.subname = "fastqc_BS"
+                        jobs.append(job)
+
+                    if config.param("DEFAULT", "skip_polyfilter", 1, "string") == "no":
+                        fastqc_out_prefix = os.path.join("fastqc", readset.sample.name)
+                        job = shotgun_metagenomics.fastqc_qa_pe(
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R1.fastq.gz"),
+                            os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R2.fastq.gz"),
+                            fastqc_out_prefix,
+                            os.path.join(fastqc_out_prefix,readset.sample.name+".polyfilter_paired_R1_fastqc.html"),
+                            os.path.join(fastqc_out_prefix,readset.sample.name+".polyfilter_paired_R2_fastqc.html")
+                            )
+                        job.name = "fastqc_POLY_" + readset.sample.name
+                        job.subname = "fastqc_PF"
+                        jobs.append(job)
+
             
             elif readset.run_type == "SINGLE_END":
                 if isinstance(ref_genome, str) and ref_genome != "":
                     raise Exception("Error: run type SINGLE_END not yet implemented with ref_genome subtracting option..\n")
+                if config.param("DEFAULT", "skip_polyfilter", 1, "string") == "no":
+                    raise Exception("Error: run type SINGLE_END not yet implemented with Polyfilter option..\n")
                 
                 log = os.path.join(self._root_dir, "qced_reads", readset.sample.name, readset.name + ".duk_contam_pair1_log.txt")
 
