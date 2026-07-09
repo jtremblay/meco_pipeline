@@ -343,7 +343,7 @@ def polyfilter_paired(infile_R1, infile_R2,
 
     job = Job(
         [infile_R1, infile_R2],
-        [polyfilterFail_R1, polyfilterFail_R2, polyfilter_R1, polyfilterFail_R2],
+        [polyfilterFail_R1, polyfilterFail_R2, polyfilter_R1, polyfilter_R2],
         [
             ['bbtools', 'module_bbtools'],
             ['java', 'module_java']
