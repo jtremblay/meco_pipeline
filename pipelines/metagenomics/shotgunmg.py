@@ -303,7 +303,7 @@ class Metagenomics(common.MECOPipeline):
                         os.path.join("qced_reads", readset.sample.name, readset.name + ".polyfilter_paired_R2" + ".fastq.gz")
                     )
                     job.name = "polyfilter_paired_" + readset.sample.name
-                    job.subname = "polyf"
+                    job.subname = "polyfilter"
                     jobs.append(job)
 
 
@@ -370,7 +370,7 @@ class Metagenomics(common.MECOPipeline):
                             os.path.join(fastqc_out_prefix,readset.sample.name+".ncontam_paired_mapped_R2_fastqc.html")
                             )
                         job.name = "fastqc_BSUB_" + readset.sample.name
-                        job.subname = "fastqc_BS"
+                        job.subname = "fastqc"
                         jobs.append(job)
 
                     if config.param("DEFAULT", "skip_polyfilter", 1, "string") == "no":
@@ -383,7 +383,7 @@ class Metagenomics(common.MECOPipeline):
                             os.path.join(fastqc_out_prefix,readset.sample.name+".polyfilter_paired_R2_fastqc.html")
                             )
                         job.name = "fastqc_POLY_" + readset.sample.name
-                        job.subname = "fastqc_PF"
+                        job.subname = "fastqc"
                         jobs.append(job)
 
             
