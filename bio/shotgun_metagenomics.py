@@ -370,7 +370,8 @@ polyfilter.sh \\
   hashes={hashes} \\
   bits={bits} \\
   seed=0 \\
-  cells={cells}""".format(
+  cells={cells} \\
+  -Xmx{xmx_memory}""".format(
     infile_R1 = infile_R1,
     infile_R2 = infile_R2,
     polyfilter_R1 = polyfilter_R1,
@@ -385,7 +386,8 @@ polyfilter.sh \\
     minlen = config.param('trim', 'min_length','int'),
     hashes = config.param('polyfilter', 'hashes','int'),
     bits = config.param('polyfilter', 'bits','int'),
-    cells = config.param('polyfilter', 'cells')
+    cells = config.param('polyfilter', 'cells'),
+    xmx_memory = config.param('polyfilter', 'xmx_mem')
     )
     return job
 
