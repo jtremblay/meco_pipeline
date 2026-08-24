@@ -1189,6 +1189,14 @@ class Metagenomics(common.MECOPipeline):
             job.subname = "merge_abundance"
             jobs.append(job)
 
+        # PG Added by Patrick G. add monitoring job to step
+        monitoring_send_mail = config.param('DEFAULT', 'monitoring_send_mail', 0, 'string')
+        if isinstance(monitoring_send_mail, str) and monitoring_send_mail == "true":
+            job = shotgun_metagenomics.monitoring()
+            job.name = "monitoring"
+            job.subname = "monitoring"
+            jobs.append(job)
+
         return jobs 
    
 
