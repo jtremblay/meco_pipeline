@@ -44,7 +44,8 @@ def bbduk(infile,
         infiles, 
         [contam, ncontam, log, ncontam_single],
         [
-            ['bbmap', 'module_bbmap']
+            ['bbmap', 'module_bbmap'],
+            ['java',  'module_java']
         ]
     )
         
